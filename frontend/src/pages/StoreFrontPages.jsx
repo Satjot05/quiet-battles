@@ -5,8 +5,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  BookOpen,
-  Layers,
   Ruler,
   X,
   ChevronDown,
@@ -15,7 +13,16 @@ import {
   ShoppingBag,
   Trash2,
   Lock,
-  Save
+  Unlock,
+  Eye,
+  EyeOff,
+  Save,
+  Package,
+  BookOpen,
+  Layers,
+  RotateCcw,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
@@ -156,9 +163,9 @@ export function ArchiveBagDrawer() {
                 <Check size={20} />
               </div>
               <h3 className="text-xl font-serif-editorial text-white">Acquisition Dispatched</h3>
-              <p className="text-xs text-neutral-400">Order Reference: {orderConfirmed}</p>
+              <p className="text-xs text-neutral-400 font-mono">ORDER_REF: {orderConfirmed}</p>
               <p className="text-xs text-neutral-300 font-light">
-                Your archival piece is allocated. A dispatch receipt has been directed to your email.
+                Your archival garment is allocated for packaging. A dispatch manifest has been directed to your email.
               </p>
               <button
                 onClick={() => {
@@ -286,34 +293,51 @@ export function ArchiveBagDrawer() {
 }
 
 // ============================================================================
-// 2. CMS ADMIN MODAL & EDITOR
+// 2. RESTORED CINEMATIC CMS ADMIN CONSOLE (VAULT HUD)
 // ============================================================================
 export function CmsAdminModal({ isOpen, onClose }) {
   const [token, setToken] = useState(localStorage.getItem('qb_admin_token') || '');
   const [loggedIn, setLoggedIn] = useState(Boolean(localStorage.getItem('qb_admin_token')));
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [series, setSeries] = useState([]);
   const [chapters, setChapters] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('');
+  const [saveStatus, setSaveStatus] = useState({ text: '', type: '' });
+  const [loading, setLoading] = useState(false);
 
-  const refreshData = () => {
-    fetch(`${API_BASE}/products`).then((r) => r.json()).then(setProducts).catch(() => {});
-    fetch(`${API_BASE}/series`).then((r) => r.json()).then(setSeries).catch(() => {});
-    fetch(`${API_BASE}/chapters`).then((r) => r.json()).then(setChapters).catch(() => {});
+  const refreshAllData = () => {
+    setLoading(true);
+    Promise.all([
+      fetch(`${API_BASE}/products`).then((r) => r.json()).catch(() => []),
+      fetch(`${API_BASE}/series`).then((r) => r.json()).catch(() => []),
+      fetch(`${API_BASE}/chapters`).then((r) => r.json()).catch(() => []),
+      fetch(`${API_BASE}/orders`, {
+        headers: { 'Authorization': `Bearer ${token || 'qb-editorial-cms-token-2026'}` }
+      }).then((r) => r.json()).catch(() => [])
+    ]).then(([prodData, seriesData, chapData, orderData]) => {
+      setProducts(Array.isArray(prodData) ? prodData : []);
+      setSeries(Array.isArray(seriesData) ? seriesData : []);
+      setChapters(Array.isArray(chapData) ? chapData : []);
+      setOrders(Array.isArray(orderData) ? orderData : []);
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
-    if (isOpen) refreshData();
+    if (isOpen) refreshAllData();
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setSaveStatus({ text: 'VERIFYING BIOMETRIC CLEARANCE...', type: 'info' });
+
     try {
       const res = await fetch(`${API_BASE}/admin/login`, {
         method: 'POST',
@@ -321,22 +345,23 @@ export function CmsAdminModal({ isOpen, onClose }) {
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
-      if (data.success && data.token) {
+      if (res.ok && data.success && data.token) {
         localStorage.setItem('qb_admin_token', data.token);
         setToken(data.token);
         setLoggedIn(true);
-        refreshData();
+        setSaveStatus({ text: '', type: '' });
+        refreshAllData();
       } else {
-        alert(data.error || 'Authentication rejected');
+        setSaveStatus({ text: data.error || 'INVALID CLEARANCE PROTOCOL', type: 'error' });
       }
     } catch {
-      alert('Unable to authenticate with CMS server');
+      setSaveStatus({ text: 'VAULT SECURE LINK OFFLINE', type: 'error' });
     }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    setSaveStatus('Recording changes to MongoDB Atlas...');
+    setSaveStatus({ text: 'COMMITTING MUTATION TO ARCHIVE VAULT...', type: 'info' });
 
     const headers = {
       'Content-Type': 'application/json',
@@ -344,234 +369,499 @@ export function CmsAdminModal({ isOpen, onClose }) {
       'x-admin-token': token || 'qb-editorial-cms-token-2026'
     };
 
-    let url = `${API_BASE}/${activeTab}/${editingItem._id || editingItem.slug}`;
-    let method = 'PUT';
+    const targetId = editingItem._id || editingItem.slug;
+    const url = `${API_BASE}/${activeTab}/${targetId}`;
 
     try {
       const res = await fetch(url, {
-        method,
+        method: 'PUT',
         headers,
         body: JSON.stringify(editingItem)
       });
       const data = await res.json();
       if (res.ok) {
-        setSaveStatus('Changes synchronized successfully.');
-        setTimeout(() => setSaveStatus(''), 2500);
-        refreshData();
+        setSaveStatus({ text: 'MUTATION DEPLOYED TO ATLAS CORE', type: 'success' });
+        setTimeout(() => setSaveStatus({ text: '', type: '' }), 3000);
+        refreshAllData();
       } else {
-        setSaveStatus(`Failed: ${data.error || 'Validation error'}`);
+        setSaveStatus({ text: `REJECTED: ${data.error || 'SCHEMA VIOLATION'}`, type: 'error' });
       }
     } catch (err) {
-      setSaveStatus(`Error: ${err.message}`);
+      setSaveStatus({ text: `NETWORK ERROR: ${err.message}`, type: 'error' });
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs">
-      <div className="bg-[#101010] border border-neutral-800 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-        <div className="p-5 border-b border-neutral-800 flex justify-between items-center bg-[#0c0c0c]">
-          <span className="text-xs tracking-[0.3em] uppercase text-[#a38f78] flex items-center gap-2">
-            <Lock size={14} /> Quiet Battles™ CMS Admin Console
-          </span>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white cursor-pointer">
-            <X size={18} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md">
+      <div className="relative w-full max-w-5xl h-[88vh] bg-[#0c0c0c] border border-neutral-800 shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
+        
+        {/* HUD Top Bar */}
+        <div className="px-6 py-4 bg-[#080808] border-b border-neutral-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 bg-[#a38f78] animate-pulse" />
+            <span className="font-mono text-[11px] tracking-[0.3em] uppercase text-[#a38f78] font-bold">
+              QUIET BATTLES™ // ARCHIVAL CMS CONTROL DECK
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:inline font-mono text-[9px] tracking-[0.25em] uppercase text-neutral-500 border border-neutral-900 px-2.5 py-1">
+              STATUS: {loggedIn ? 'UNRESTRICTED CLEARANCE' : 'SECURE VAULT GATE'}
+            </span>
+            <button
+              onClick={onClose}
+              className="text-neutral-500 hover:text-white transition-colors cursor-pointer p-1"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
+        {/* VAULT LOGIN GATEWAY */}
         {!loggedIn ? (
-          <form onSubmit={handleLogin} className="p-8 max-w-sm mx-auto w-full space-y-4 my-auto">
-            <h3 className="text-lg font-serif-editorial text-white text-center">Clearance Verification</h3>
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-[#151515] border border-neutral-800 px-4 py-3 text-xs text-white outline-none focus:border-[#a38f78]"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#151515] border border-neutral-800 px-4 py-3 text-xs text-white outline-none focus:border-[#a38f78]"
-            />
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-[#f4f4f0] text-black text-xs uppercase tracking-widest font-semibold hover:bg-[#a38f78] hover:text-white transition-colors cursor-pointer"
-            >
-              Access Vault CMS
-            </button>
-          </form>
-        ) : (
-          <div className="flex-1 flex overflow-hidden">
-            <div className="w-1/3 border-r border-neutral-800 p-4 overflow-y-auto">
-              <div className="flex gap-2 mb-4">
-                {['products', 'chapters', 'series'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setEditingItem(null);
-                    }}
-                    className={`text-[10px] tracking-widest uppercase px-3 py-1.5 border transition-all cursor-pointer ${
-                      activeTab === tab ? 'border-[#a38f78] text-[#a38f78] bg-[#161616]' : 'border-transparent text-neutral-500'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+          <div className="flex-1 flex items-center justify-center p-6 bg-film-grain">
+            <div className="w-full max-w-md p-8 sm:p-10 bg-[#101010] border border-neutral-800 shadow-2xl space-y-6 relative">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-full border border-[#a38f78]/60 mx-auto flex items-center justify-center text-[#a38f78] mb-3">
+                  <Lock size={18} />
+                </div>
+                <h3 className="font-serif-editorial text-2xl text-white tracking-wider">RESTRICTED VAULT</h3>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-neutral-400">
+                  Authentication Required for Archive Modification
+                </p>
               </div>
 
-              <div className="space-y-2">
-                {(activeTab === 'products' ? products : activeTab === 'chapters' ? chapters : series).map((item) => (
-                  <div
-                    key={item._id}
-                    onClick={() => {
-                      const cloned = { ...item };
-                      if (activeTab === 'products' && !cloned.sku) {
-                        cloned.sku = `QB-${(cloned.slug || 'GARMENT').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`;
-                      }
-                      setEditingItem(cloned);
-                    }}
-                    className={`p-3 border text-xs cursor-pointer transition-all ${
-                      editingItem?._id === item._id ? 'border-[#a38f78] bg-[#1a1a1a] text-white' : 'border-neutral-900 text-neutral-400 hover:border-neutral-800'
-                    }`}
-                  >
-                    <p className="font-serif-editorial truncate">{item.name || item.title}</p>
-                    <p className="text-[10px] text-neutral-600 mt-0.5 truncate">{item.slug || item._id}</p>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="font-mono text-[9px] uppercase tracking-[0.2em] text-neutral-500">Master Identifier</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-[#161616] border border-neutral-800 px-4 py-3 text-xs text-white font-mono focus:border-[#a38f78] outline-none"
+                    placeholder="ADMIN_ID"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-mono text-[9px] uppercase tracking-[0.2em] text-neutral-500">Security Clearance Key</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-[#161616] border border-neutral-800 px-4 py-3 text-xs text-white font-mono focus:border-[#a38f78] outline-none pr-10"
+                      placeholder="••••••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
                   </div>
-                ))}
+                </div>
+
+                {saveStatus.text && (
+                  <p className={`font-mono text-[10px] tracking-wider text-center ${
+                    saveStatus.type === 'error' ? 'text-red-400' : 'text-[#a38f78]'
+                  }`}>
+                    {saveStatus.text}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-4 bg-[#f4f4f0] text-black font-mono text-xs uppercase tracking-[0.3em] font-semibold hover:bg-[#a38f78] hover:text-white transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer mt-4"
+                >
+                  <Unlock size={14} /> Validate Clearance
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          /* UNLOCKED HUD DASHBOARD */
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+            
+            {/* Sidebar Navigation & Directory */}
+            <div className="w-full md:w-80 bg-[#090909] border-r border-neutral-800 flex flex-col shrink-0">
+              {/* Category Switcher Tabs */}
+              <div className="grid grid-cols-4 border-b border-neutral-800 p-2 gap-1 bg-[#0d0d0d]">
+                {[
+                  { id: 'products', label: 'Items', icon: Package },
+                  { id: 'chapters', label: 'Texts', icon: BookOpen },
+                  { id: 'series', label: 'Series', icon: Layers },
+                  { id: 'orders', label: 'Orders', icon: ShoppingBag }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setEditingItem(null);
+                        setSaveStatus({ text: '', type: '' });
+                      }}
+                      className={`py-2 px-1 text-[10px] font-mono tracking-wider uppercase flex flex-col items-center gap-1 transition-all cursor-pointer border ${
+                        active
+                          ? 'border-[#a38f78] bg-[#1a1816] text-[#a38f78]'
+                          : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                      }`}
+                    >
+                      <Icon size={13} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Items List */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {loading ? (
+                  <div className="p-8 text-center font-mono text-[10px] tracking-widest uppercase text-neutral-600 animate-pulse">
+                    FETCHING ATLAS CLUSTER...
+                  </div>
+                ) : activeTab === 'orders' ? (
+                  orders.length === 0 ? (
+                    <div className="p-8 text-center font-mono text-[10px] uppercase text-neutral-600">NO ORDERS LOGGED</div>
+                  ) : (
+                    orders.map((ord) => (
+                      <div
+                        key={ord._id}
+                        onClick={() => setEditingItem(ord)}
+                        className={`p-3.5 border transition-all cursor-pointer ${
+                          editingItem?._id === ord._id
+                            ? 'border-[#a38f78] bg-[#141414] text-white'
+                            : 'border-neutral-900 bg-[#0b0b0b] text-neutral-400 hover:border-neutral-800'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center font-mono text-[10px]">
+                          <span className="text-[#a38f78] font-bold">{ord.orderNumber}</span>
+                          <span className="text-white">${ord.totalAmount} USD</span>
+                        </div>
+                        <p className="text-xs text-neutral-300 mt-1 truncate">{ord.customer?.name || 'Collector'}</p>
+                        <p className="text-[10px] text-neutral-600 truncate mt-0.5">{ord.customer?.email}</p>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  (activeTab === 'products' ? products : activeTab === 'chapters' ? chapters : series).map((item) => {
+                    const isSelected = editingItem?._id === item._id;
+                    return (
+                      <div
+                        key={item._id}
+                        onClick={() => {
+                          const cloned = { ...item };
+                          if (activeTab === 'products' && !cloned.sku) {
+                            cloned.sku = `QB-${(cloned.slug || 'GARMENT').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`;
+                          }
+                          setEditingItem(cloned);
+                        }}
+                        className={`p-3.5 border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[#a38f78] bg-[#161514] text-white shadow-[inset_0_0_12px_rgba(163,143,120,0.1)]'
+                            : 'border-neutral-900 bg-[#0c0c0c] text-neutral-400 hover:border-neutral-800 hover:text-neutral-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-serif-editorial text-xs truncate max-w-[170px] text-neutral-200">
+                            {item.name || item.title}
+                          </h5>
+                          {item.sku && (
+                            <span className="font-mono text-[9px] text-[#a38f78] px-1 bg-[#1a1816] border border-[#a38f78]/30">
+                              {item.sku}
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-mono text-[9px] text-neutral-600 truncate mt-1">
+                          SLUG: {item.slug || item._id}
+                        </p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Refresh Footer */}
+              <div className="p-3 border-t border-neutral-800 bg-[#080808] flex justify-between items-center">
+                <button
+                  onClick={refreshAllData}
+                  className="font-mono text-[9px] tracking-widest uppercase text-neutral-500 hover:text-[#a38f78] flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw size={11} /> Sync Atlas
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('qb_admin_token');
+                    setLoggedIn(false);
+                  }}
+                  className="font-mono text-[9px] tracking-widest uppercase text-neutral-600 hover:text-red-400 cursor-pointer"
+                >
+                  Deauthorize
+                </button>
               </div>
             </div>
 
-            <div className="w-2/3 p-6 overflow-y-auto">
+            {/* Editing Cockpit */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-[#0e0e0e]">
               {editingItem ? (
-                <form onSubmit={handleSave} className="space-y-4">
-                  <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
-                    <span className="text-xs uppercase tracking-widest text-[#a38f78]">
-                      Editing: {editingItem.name || editingItem.title}
-                    </span>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-[#a38f78] text-black text-[11px] font-semibold uppercase tracking-wider hover:bg-[#f4f4f0] flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Save size={13} /> Save to Atlas
-                    </button>
+                activeTab === 'orders' ? (
+                  /* ORDER MANIFEST INSPECTOR */
+                  <div className="space-y-6 max-w-2xl">
+                    <div className="border-b border-neutral-800 pb-4">
+                      <span className="font-mono text-[10px] tracking-widest uppercase text-[#a38f78]">
+                        DISPATCH MANIFEST // {editingItem.orderNumber}
+                      </span>
+                      <h3 className="font-serif-editorial text-2xl text-white mt-1">
+                        Acquisition from {editingItem.customer?.name}
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 font-mono text-xs bg-[#121212] p-5 border border-neutral-800">
+                      <div>
+                        <span className="text-neutral-500 block text-[9px] uppercase">Destination City</span>
+                        <span className="text-white mt-0.5 block">{editingItem.customer?.city}, {editingItem.customer?.postalCode}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block text-[9px] uppercase">Email Contact</span>
+                        <span className="text-white mt-0.5 block truncate">{editingItem.customer?.email}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-neutral-500 block text-[9px] uppercase">Fulfillment Address</span>
+                        <span className="text-white mt-0.5 block">{editingItem.customer?.address}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="font-mono text-[10px] uppercase tracking-widest text-neutral-400">Allocated Garments</h4>
+                      <div className="divide-y divide-neutral-900 border border-neutral-800 bg-[#121212]">
+                        {editingItem.items?.map((it, idx) => (
+                          <div key={idx} className="p-3.5 flex justify-between items-center text-xs">
+                            <div>
+                              <p className="font-serif-editorial text-white">{it.name}</p>
+                              <p className="font-mono text-[10px] text-[#a38f78]">Size {it.size} × {it.quantity}</p>
+                            </div>
+                            <span className="font-mono text-neutral-300">${it.price * it.quantity} USD</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-neutral-800 flex justify-between font-mono text-xs uppercase">
+                      <span className="text-neutral-500">Gross Settlement:</span>
+                      <span className="text-[#a38f78] font-bold text-sm">${editingItem.totalAmount} USD</span>
+                    </div>
                   </div>
-
-                  {saveStatus && <p className="text-xs text-[#a38f78] animate-pulse">{saveStatus}</p>}
-
-                  {activeTab === 'products' && (
-                    <div className="space-y-3 text-xs">
+                ) : (
+                  /* PRODUCT / CHAPTER / SERIES EDITOR */
+                  <form onSubmit={handleSave} className="space-y-6 max-w-2xl">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-neutral-800 pb-4">
                       <div>
-                        <label className="text-neutral-400 block mb-1">Name</label>
-                        <input
-                          type="text"
-                          value={editingItem.name || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
+                        <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-[#a38f78]">
+                          SCHEMA: {activeTab.toUpperCase()}
+                        </span>
+                        <h3 className="font-serif-editorial text-2xl text-white mt-0.5">
+                          {editingItem.name || editingItem.title}
+                        </h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="submit"
+                        className="px-6 py-3 bg-[#a38f78] text-black font-mono text-xs uppercase tracking-widest font-semibold hover:bg-[#f4f4f0] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                      >
+                        <Save size={14} /> Commit Changes
+                      </button>
+                    </div>
+
+                    {saveStatus.text && (
+                      <div className={`p-3 font-mono text-xs tracking-wider border flex items-center gap-2 ${
+                        saveStatus.type === 'error'
+                          ? 'bg-red-950/30 border-red-800 text-red-300'
+                          : 'bg-[#1a1714] border-[#a38f78] text-[#a38f78]'
+                      }`}>
+                        {saveStatus.type === 'error' ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+                        <span>{saveStatus.text}</span>
+                      </div>
+                    )}
+
+                    {/* PRODUCT FORM SPECIFICATIONS */}
+                    {activeTab === 'products' && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                              Garment Name
+                            </label>
+                            <input
+                              type="text"
+                              value={editingItem.name || ''}
+                              onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                              className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="font-mono text-[9px] tracking-wider uppercase text-[#a38f78] block mb-1">
+                              Archival SKU (Unique Code)
+                            </label>
+                            <input
+                              required
+                              type="text"
+                              value={editingItem.sku || ''}
+                              onChange={(e) => setEditingItem({ ...editingItem, sku: e.target.value })}
+                              className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-[#a38f78] font-mono outline-none focus:border-[#a38f78]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                              Price (USD)
+                            </label>
+                            <input
+                              type="number"
+                              value={editingItem.price || 0}
+                              onChange={(e) => setEditingItem({ ...editingItem, price: Number(e.target.value) })}
+                              className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-[#a38f78]"
+                            />
+                          </div>
+                          <div>
+                            <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                              Fabric Density / Weight
+                            </label>
+                            <input
+                              type="text"
+                              value={editingItem.weight || '480 GSM Heavyweight'}
+                              onChange={(e) => setEditingItem({ ...editingItem, weight: e.target.value })}
+                              className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                            />
+                          </div>
+                        </div>
+
                         <div>
-                          <label className="text-neutral-400 block mb-1">SKU Code (Required)</label>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Textile Composition
+                          </label>
                           <input
-                            required
                             type="text"
-                            value={editingItem.sku || ''}
-                            onChange={(e) => setEditingItem({ ...editingItem, sku: e.target.value })}
-                            className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
+                            value={editingItem.material || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, material: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
                           />
                         </div>
+
                         <div>
-                          <label className="text-neutral-400 block mb-1">Price (USD)</label>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Architectural Silhouette / Cut
+                          </label>
                           <input
-                            type="number"
-                            value={editingItem.price || 0}
-                            onChange={(e) => setEditingItem({ ...editingItem, price: Number(e.target.value) })}
-                            className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
+                            type="text"
+                            value={editingItem.fit || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, fit: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Garment Narrative / Design Ethos
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={editingItem.description || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
                           />
                         </div>
                       </div>
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Material Composition</label>
-                        <input
-                          type="text"
-                          value={editingItem.material || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, material: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Description</label>
-                        <textarea
-                          rows={3}
-                          value={editingItem.description || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {activeTab === 'chapters' && (
-                    <div className="space-y-3 text-xs">
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Title</label>
-                        <input
-                          type="text"
-                          value={editingItem.title || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Subtitle</label>
-                        <input
-                          type="text"
-                          value={editingItem.subtitle || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, subtitle: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Narrative Essay</label>
-                        <textarea
-                          rows={6}
-                          value={editingItem.narrative || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, narrative: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    {/* CHAPTER FORM SPECIFICATIONS */}
+                    {activeTab === 'chapters' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Chapter Title
+                          </label>
+                          <input
+                            type="text"
+                            value={editingItem.title || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                          />
+                        </div>
 
-                  {activeTab === 'series' && (
-                    <div className="space-y-3 text-xs">
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Series Title</label>
-                        <input
-                          type="text"
-                          value={editingItem.title || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Thematic Subtitle
+                          </label>
+                          <input
+                            type="text"
+                            value={editingItem.subtitle || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, subtitle: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Archival Essay / Written Narrative
+                          </label>
+                          <textarea
+                            rows={7}
+                            value={editingItem.narrative || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, narrative: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78] font-light leading-relaxed"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-neutral-400 block mb-1">Manifesto</label>
-                        <textarea
-                          rows={5}
-                          value={editingItem.manifesto || ''}
-                          onChange={(e) => setEditingItem({ ...editingItem, manifesto: e.target.value })}
-                          className="w-full bg-[#151515] border border-neutral-800 px-3 py-2 text-white"
-                        />
+                    )}
+
+                    {/* SERIES FORM SPECIFICATIONS */}
+                    {activeTab === 'series' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Series Title
+                          </label>
+                          <input
+                            type="text"
+                            value={editingItem.title || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-mono text-[9px] tracking-wider uppercase text-neutral-400 block mb-1">
+                            Series Manifesto
+                          </label>
+                          <textarea
+                            rows={6}
+                            value={editingItem.manifesto || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, manifesto: e.target.value })}
+                            className="w-full bg-[#141414] border border-neutral-800 px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#a38f78] font-light leading-relaxed"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </form>
+                    )}
+                  </form>
+                )
               ) : (
-                <div className="h-full flex items-center justify-center text-xs tracking-widest uppercase text-neutral-600">
-                  Select a document from the register to modify
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                  <div className="w-12 h-12 rounded-full border border-neutral-800 flex items-center justify-center text-neutral-600">
+                    <Layers size={18} />
+                  </div>
+                  <h4 className="font-mono text-xs uppercase tracking-[0.25em] text-neutral-400">
+                    NO ACTIVE SELECTION IN BUFFER
+                  </h4>
+                  <p className="font-mono text-[10px] text-neutral-600 max-w-xs">
+                    Choose an archive artifact, chapter narrative, or incoming order from the register column to mutate its values.
+                  </p>
                 </div>
               )}
             </div>
