@@ -176,7 +176,7 @@ app.delete('/api/products/:id', verifyAdminToken, async (req, res) => {
   }
 });
 
-// --- SERIES ROUTES ---
+// --- SERIES ROUTES (WITH RESILIENT SLUG RESOLUTION) ---
 app.get('/api/series', async (req, res) => {
   try {
     const allSeries = await Series.find().populate('chapters');
@@ -188,10 +188,37 @@ app.get('/api/series', async (req, res) => {
 
 app.get('/api/series/:slug', async (req, res) => {
   try {
-    const series = await Series.findOne({ slug: req.params.slug }).populate({
-      path: 'chapters',
-      populate: { path: 'linkedProduct' }
-    });
+    const { slug } = req.params;
+    let series;
+
+    // 1. Try matching exact slug or series number (series-01, series-01-the-gentle-armor, series-1)
+    const seriesMatch = slug.match(/series-?0?(\d+)/i);
+    if (seriesMatch) {
+      const num = parseInt(seriesMatch[1], 10);
+      series = await Series.findOne({
+        $or: [{ slug }, { seriesNumber: num }]
+      }).populate({
+        path: 'chapters',
+        populate: { path: 'linkedProduct' }
+      });
+    }
+
+    // 2. Try raw slug match
+    if (!series) {
+      series = await Series.findOne({ slug }).populate({
+        path: 'chapters',
+        populate: { path: 'linkedProduct' }
+      });
+    }
+
+    // 3. Fallback: if only one series exists in database, return it
+    if (!series) {
+      series = await Series.findOne().populate({
+        path: 'chapters',
+        populate: { path: 'linkedProduct' }
+      });
+    }
+
     if (!series) return res.status(404).json({ error: 'Series not found' });
     res.json(series);
   } catch (err) {
@@ -199,7 +226,7 @@ app.get('/api/series/:slug', async (req, res) => {
   }
 });
 
-// --- CHAPTER ROUTES ---
+// --- CHAPTER ROUTES (WITH RESILIENT SLUG RESOLUTION) ---
 app.get('/api/chapters', async (req, res) => {
   try {
     const chapters = await Chapter.find().populate('seriesRef').populate('linkedProduct').sort({ chapterNumber: 1 });
@@ -211,9 +238,27 @@ app.get('/api/chapters', async (req, res) => {
 
 app.get('/api/chapters/:slug', async (req, res) => {
   try {
-    const chapter = await Chapter.findOne({ slug: req.params.slug })
-      .populate('seriesRef')
-      .populate('linkedProduct');
+    const { slug } = req.params;
+    let chapter;
+
+    // 1. Try matching exact slug or chapter number (e.g. chapter-2, chapter-2-beneath-the-surface)
+    const chapterMatch = slug.match(/chapter-?0?(\d+)/i);
+    if (chapterMatch) {
+      const num = parseInt(chapterMatch[1], 10);
+      chapter = await Chapter.findOne({
+        $or: [{ slug }, { chapterNumber: num }]
+      })
+        .populate('seriesRef')
+        .populate('linkedProduct');
+    }
+
+    // 2. Try raw slug match
+    if (!chapter) {
+      chapter = await Chapter.findOne({ slug })
+        .populate('seriesRef')
+        .populate('linkedProduct');
+    }
+
     if (!chapter) return res.status(404).json({ error: 'Chapter not found' });
     res.json(chapter);
   } catch (err) {
