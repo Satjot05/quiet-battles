@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from "./StoreFrontPages";
 
-export function AdminDashboard() {
+export default function AdminDashboard() {
   // 1. IN-MEMORY AUTH STATE (Wipes automatically on F5 refresh)
   const [adminToken, setAdminToken] = useState('');
   const [adminUser, setAdminUser] = useState(null);
