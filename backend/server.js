@@ -14,8 +14,7 @@ app.use(express.json());
 
 // Cloud Database Connection URI (falls back to local if not set)
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  'mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority';
+  process.env.MONGO_URI ||'mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority';
 
 // Admin Credentials
 const ADMIN_USER = process.env.ADMIN_USER || 'gamer_jot';
@@ -53,6 +52,20 @@ function requireAdminAuth(req, res, next) {
 // ==========================================
 // 1. PUBLIC STOREFRONT API ROUTES (GET)
 // ==========================================
+// Health Check Route for Load Balancer / Pings
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    service: 'QUIET BATTLES™ Headless Editorial API',
+    version: '1.0.0',
+    endpoints: {
+      products: '/api/products',
+      series: '/api/series',
+      chapters: '/api/chapters',
+      admin: '/api/admin'
+    }
+  });
+});
 app.get('/api/series', async (req, res) => {
   try {
     const seriesList = await Series.find().sort({ createdAt: 1 });
