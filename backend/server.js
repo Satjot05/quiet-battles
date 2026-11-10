@@ -1,8 +1,12 @@
-// Force public DNS resolvers locally for MongoDB SRV lookups
+// backend/server.js
+
+// 1. Force public DNS resolvers locally for MongoDB Atlas SRV record lookups
 const dns = require('dns');
 try {
   dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch (e) {}
+} catch (e) {
+  console.warn('Custom DNS resolver init skipped:', e.message);
+}
 
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
@@ -13,55 +17,71 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ==========================================
-// 1. MIDDLEWARE
-// ==========================================
+// ============================================================================
+// 2. PRODUCTION CORS & BODY PARSERS
+// ============================================================================
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-token', 'admin-token']
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ==========================================
-// 2. MONGOOSE SCHEMAS & MODELS
-// ==========================================
+// ============================================================================
+// 3. MONGOOSE SCHEMAS & MODELS (strict: false enables dynamic CMS properties)
+// ============================================================================
 const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
+  slug: { type: String },
+  sku: { type: String },
+  tagline: { type: String },
   price: { type: Number, required: true },
-  edition: { type: String, default: "Standard Edition" },
-  material: { type: String, required: true },
-  fit: { type: String, default: "Oversized Boxy Silhouette" },
-  weight: { type: String, default: "450 GSM Heavyweight Fleece" },
-  origin: { type: String, default: "Crafted in Portugal" },
-  treatment: { type: String, default: "Cold-Dyed Pigment Wash" },
+  edition: { type: String, default: 'Standard Edition' },
+  material: { type: String, default: '100% Organic Heavyweight Cotton' },
+  fit: { type: String, default: 'Oversized Boxy Silhouette' },
+  weight: { type: String, default: '480 GSM Heavyweight' },
+  origin: { type: String, default: 'Crafted in Portugal' },
+  treatment: { type: String, default: 'Cold-Dyed Pigment Wash' },
   images: [{ type: String }],
-  description: { type: String, required: true },
+  description: { type: String, default: '' },
   stock: { type: Number, default: 50 },
+  inStock: { type: Boolean, default: true },
+  sizes: { type: [String], default: ['S', 'M', 'L', 'XL'] },
+  fabricDetails: { type: [String], default: [] },
   chapterRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 const ChapterSchema = new mongoose.Schema({
-  chapterNumber: { type: Number, required: true },
+  chapterNumber: { type: Number, default: 1 },
+  romanNumeral: { type: String, default: 'I' },
   title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
+  slug: { type: String, required: true },
   subtitle: { type: String },
-  narrative: { type: String, required: true },
-  releaseDate: { type: Date, default: Date.now },
+  narrative: { type: String },
+  storyParagraphs: { type: [String], default: [] },
+  pullQuote: { type: String },
+  moodGallery: { type: [String], default: [] },
   coverImage: { type: String },
+  heroImage: { type: String },
   seriesRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Series' },
+  seriesId: { type: mongoose.Schema.Types.ObjectId, ref: 'Series' },
   linkedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 const SeriesSchema = new mongoose.Schema({
-  seriesNumber: { type: Number, required: true },
+  seriesNumber: { type: Number, default: 1 },
+  seriesCode: { type: String, default: 'SERIES 01' },
   title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  manifesto: { type: String, required: true },
+  slug: { type: String, required: true },
+  subtitle: { type: String },
+  manifesto: { type: String },
+  description: { type: String },
   releaseYear: { type: Number, default: 2026 },
+  releaseSeason: { type: String, default: 'ARCHIVE 2026' },
+  heroImage: { type: String },
   chapters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }]
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 const OrderSchema = new mongoose.Schema({
   orderNumber: { type: String, required: true, unique: true },
@@ -76,23 +96,25 @@ const OrderSchema = new mongoose.Schema({
     {
       productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
       name: String,
+      sku: String,
       price: Number,
       quantity: Number,
-      size: String
+      size: String,
+      image: String
     }
   ],
   totalAmount: { type: Number, required: true },
   status: { type: String, default: 'Confirmed' }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 const Product = mongoose.models.Product || mongoose.model('Product', ProductSchema);
 const Chapter = mongoose.models.Chapter || mongoose.model('Chapter', ChapterSchema);
 const Series = mongoose.models.Series || mongoose.model('Series', SeriesSchema);
 const Order = mongoose.models.Order || mongoose.model('Order', OrderSchema);
 
-// ==========================================
-// 3. ADMIN AUTHENTICATION MIDDLEWARE
-// ==========================================
+// ============================================================================
+// 4. ADMIN AUTHENTICATION MIDDLEWARE
+// ============================================================================
 const verifyAdminToken = (req, res, next) => {
   const token =
     req.headers['x-admin-token'] ||
@@ -102,34 +124,55 @@ const verifyAdminToken = (req, res, next) => {
   const expectedToken = process.env.ADMIN_TOKEN || 'qb-editorial-cms-token-2026';
 
   if (!token || (token !== expectedToken && token !== 'qb-editorial-cms-token-2026')) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid administrative clearance.' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid administrative clearance token.' });
   }
   next();
 };
 
-// ==========================================
-// 4. API ROUTES
-// ==========================================
+// ============================================================================
+// 5. DATA NORMALIZATION HELPERS
+// ============================================================================
+function normalizeProductData(data) {
+  const payload = { ...data };
+  if (!payload.sku || payload.sku.trim() === '') {
+    const seed = payload.slug || payload.name || 'GARMENT';
+    payload.sku = `QB-${seed.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`;
+  }
+  if (!payload.slug && payload.name) {
+    payload.slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+  if (payload.price) {
+    payload.price = Number(payload.price);
+  }
+  return payload;
+}
 
-// Health & System Check
+// ============================================================================
+// 6. API ENDPOINTS
+// ============================================================================
+
+// Base Health Check
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    service: 'QUIET BATTLES Editorial API',
+    service: 'QUIET BATTLES™ Editorial API',
     version: '1.0.0',
     dbState: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
 app.get('/api', (req, res) => {
-  res.json({ status: 'ok', endpoints: ['/api/products', '/api/series', '/api/chapters', '/api/orders'] });
+  res.json({
+    status: 'ok',
+    endpoints: ['/api/products', '/api/series', '/api/chapters', '/api/orders', '/api/admin/login']
+  });
 });
 
 // Admin CMS Login
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
-  const adminUser = process.env.ADMIN_USER || 'gamer_jot';
-  const adminPass = process.env.ADMIN_PASS || 'thisissecured2k26';
+  const adminUser = process.env.ADMIN_USER || 'admin';
+  const adminPass = process.env.ADMIN_PASS || 'quietbattles2026';
   const adminToken = process.env.ADMIN_TOKEN || 'qb-editorial-cms-token-2026';
 
   if (username === adminUser && password === adminPass) {
@@ -138,17 +181,26 @@ app.post('/api/admin/login', (req, res) => {
   return res.status(401).json({ error: 'Invalid admin credentials' });
 });
 
-// --- PRODUCT ROUTES ---
+// ----------------------------------------------------------------------------
+// PRODUCT ROUTES
+// ----------------------------------------------------------------------------
 app.get('/api/products', async (req, res) => {
   try {
     const products = await Product.find().populate('chapterRef').sort({ createdAt: -1 });
-    res.json(products);
+    const enriched = products.map((p) => {
+      const obj = p.toObject();
+      if (!obj.sku) {
+        obj.sku = `QB-${(obj.slug || 'GARMENT').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`;
+      }
+      return obj;
+    });
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Resilient product resolver: matches both ObjectId AND slug
+// Dual resolution: matches MongoDB ObjectId or human-readable slug
 app.get('/api/products/:identifier', async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -161,8 +213,15 @@ app.get('/api/products/:identifier', async (req, res) => {
       product = await Product.findOne({ slug: identifier }).populate('chapterRef');
     }
 
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
+    if (!product) {
+      return res.status(404).json({ error: 'Garment artifact not found in archive registry' });
+    }
+
+    const obj = product.toObject();
+    if (!obj.sku) {
+      obj.sku = `QB-${(obj.slug || 'GARMENT').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`;
+    }
+    res.json(obj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -170,7 +229,8 @@ app.get('/api/products/:identifier', async (req, res) => {
 
 app.post('/api/products', verifyAdminToken, async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const payload = normalizeProductData(req.body);
+    const product = await Product.create(payload);
     res.status(201).json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -181,8 +241,12 @@ app.put('/api/products/:identifier', verifyAdminToken, async (req, res) => {
   try {
     const { identifier } = req.params;
     const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
-    const product = await Product.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
-    if (!product) return res.status(404).json({ error: 'Product not found' });
+    const payload = normalizeProductData(req.body);
+
+    const product = await Product.findOneAndUpdate(query, payload, { new: true });
+    if (!product) {
+      return res.status(404).json({ error: 'Product artifact not found' });
+    }
     res.json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -194,17 +258,24 @@ app.delete('/api/products/:identifier', verifyAdminToken, async (req, res) => {
     const { identifier } = req.params;
     const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
     const product = await Product.findOneAndDelete(query);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json({ message: 'Product archived from registry', id: identifier });
+    if (!product) {
+      return res.status(404).json({ error: 'Product artifact not found' });
+    }
+    res.json({ message: 'Artifact successfully unlinked and archived', id: identifier });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// --- SERIES ROUTES ---
+// ----------------------------------------------------------------------------
+// SERIES ROUTES
+// ----------------------------------------------------------------------------
 app.get('/api/series', async (req, res) => {
   try {
-    const allSeries = await Series.find().populate('chapters');
+    const allSeries = await Series.find().populate({
+      path: 'chapters',
+      populate: { path: 'linkedProduct' }
+    });
     res.json(allSeries);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -234,6 +305,7 @@ app.get('/api/series/:slug', async (req, res) => {
       });
     }
 
+    // Direct fallback to first series in DB
     if (!series) {
       series = await Series.findOne().populate({
         path: 'chapters',
@@ -269,10 +341,15 @@ app.put('/api/series/:identifier', verifyAdminToken, async (req, res) => {
   }
 });
 
-// --- CHAPTER ROUTES ---
+// ----------------------------------------------------------------------------
+// CHAPTER ROUTES
+// ----------------------------------------------------------------------------
 app.get('/api/chapters', async (req, res) => {
   try {
-    const chapters = await Chapter.find().populate('seriesRef').populate('linkedProduct').sort({ chapterNumber: 1 });
+    const chapters = await Chapter.find()
+      .populate('seriesRef')
+      .populate('linkedProduct')
+      .sort({ chapterNumber: 1 });
     res.json(chapters);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -300,7 +377,7 @@ app.get('/api/chapters/:slug', async (req, res) => {
         .populate('linkedProduct');
     }
 
-    if (!chapter) return res.status(404).json({ error: 'Chapter not found' });
+    if (!chapter) return res.status(404).json({ error: 'Chapter narrative not found' });
     res.json(chapter);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -321,24 +398,51 @@ app.put('/api/chapters/:identifier', verifyAdminToken, async (req, res) => {
     const { identifier } = req.params;
     const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
     const updated = await Chapter.findOneAndUpdate(query, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Chapter not found' });
+    if (!updated) return res.status(404).json({ error: 'Chapter narrative not found' });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// --- ORDER CHECKOUT ROUTES ---
+// ----------------------------------------------------------------------------
+// ORDERS & CHECKOUT ROUTES
+// ----------------------------------------------------------------------------
 app.post('/api/orders', async (req, res) => {
   try {
-    const { customer, items, totalAmount } = req.body;
+    const { customer, items, totalAmount, name, email, address, city, postalCode } = req.body;
+
+    const resolvedCustomer = customer || {
+      name: name || req.body.customerName || 'Anonymous Collector',
+      email: email || req.body.customerEmail || 'collector@quietbattles.com',
+      address: address || req.body.shippingAddress || 'Direct Dispatch',
+      city: city || 'Bengaluru',
+      postalCode: postalCode || '560102'
+    };
+
+    const rawItems = items || req.body.cartItems || [];
+    const resolvedItems = rawItems.map((item) => ({
+      productId: item.productId || item._id || item.id,
+      name: item.name || 'Archive Garment',
+      sku: item.sku || 'ARCHIVE',
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      size: item.size || 'L',
+      image: item.image || ''
+    }));
+
+    const resolvedTotal = totalAmount !== undefined
+      ? Number(totalAmount)
+      : resolvedItems.reduce((acc, it) => acc + (it.price * it.quantity), 0);
+
     const orderNumber = `QB-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const order = await Order.create({
       orderNumber,
-      customer,
-      items,
-      totalAmount
+      customer: resolvedCustomer,
+      items: resolvedItems,
+      totalAmount: resolvedTotal,
+      status: 'Confirmed'
     });
 
     res.status(201).json({
@@ -347,6 +451,7 @@ app.post('/api/orders', async (req, res) => {
       order
     });
   } catch (err) {
+    console.error('Order creation error:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -360,19 +465,21 @@ app.get('/api/orders', verifyAdminToken, async (req, res) => {
   }
 });
 
-// ==========================================
-// 5. DATABASE CONNECTION & SERVER INIT
-// ==========================================
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority";
+// ============================================================================
+// 7. MONGOOSE CONNECTION & SERVER STARTUP
+// ============================================================================
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  'mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log(" Connected to MongoDB Atlas: quiet_battles");
+    console.log(' Connected to MongoDB Atlas: quiet_battles');
     app.listen(PORT, () => {
-      console.log(` QUIET BATTLES API live on port ${PORT}`);
+      console.log(` QUIET BATTLES API operational on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ Database Connection Failed:", err.message);
+    console.error('❌ Database Connection Failed:', err.message);
     process.exit(1);
   });

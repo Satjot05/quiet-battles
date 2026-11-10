@@ -1,41 +1,42 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { CartProvider } from "./context/CartContext";
-import { Navbar, CartDrawer } from "./components/NavbarandCart";
-import { 
-  HomePage, 
-  SeriesArchivePage, 
-  ChapterDetailPage, 
-  ProductDetailPage 
-} from "./pages/StoreFrontPages";
-import AdminDashboard from "./pages/AdminDashboard";
+import { useState } from 'react';
+import { useCart } from './context/CartContext';
+import { ArchiveBagDrawer, CmsAdminModal } from './pages/StoreFrontPages';
 
-function App() {
+// Inside your main App component or Navbar:
+export default function App() {
+  const { totalCount, setIsBagOpen } = useCart();
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
   return (
-    <CartProvider>
-      <Router>
-        <div className="min-h-screen bg-[#0a0a0a] text-[#ededed] font-sans antialiased selection:bg-[#f5f5f5] selection:text-[#0a0a0a]">
-          <Navbar />
-          <CartDrawer />
-          <main>
-            <Routes>
-              {/* Public Storefront Routes */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/series/:slug" element={<SeriesArchivePage />} />
-              <Route path="/chapter/:slug" element={<ChapterDetailPage />} />
-              <Route path="/product/:slug" element={<ProductDetailPage />} />
+    <>
+      {/* 1. Header with dynamic triggers */}
+      <header className="fixed top-0 left-0 w-full z-40 bg-black/80 backdrop-blur-md border-b border-neutral-900 px-6 py-4 flex justify-between items-center">
+        <Link to="/" className="text-base font-serif-editorial tracking-[0.25em] text-white">
+          QUIET BATTLES™
+        </Link>
 
-              {/* Administrative CMS Vault */}
-              <Route path="/admin" element={<AdminDashboard />} />
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => setIsAdminOpen(true)}
+            className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 hover:text-[#a38f78] border border-neutral-800 px-3 py-1.5"
+          >
+            CMS Admin
+          </button>
 
-              {/* Catch-all fallback */}
-              <Route path="*" element={<HomePage />} />
-            </Routes>
-          </main>
+          <button
+            onClick={() => setIsBagOpen(true)}
+            className="text-[10px] tracking-[0.2em] uppercase text-white flex items-center gap-2 hover:text-[#a38f78]"
+          >
+            Archive Bag ({totalCount})
+          </button>
         </div>
-      </Router>
-    </CartProvider>
+      </header>
+
+      {/* 2. Global Drawers and Modals */}
+      <ArchiveBagDrawer />
+      <CmsAdminModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
+
+      {/* ... Your Routes ... */}
+    </>
   );
 }
-
-export default App;
