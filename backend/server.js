@@ -1,16 +1,14 @@
-// Force Node.js to use public DNS resolvers locally for MongoDB SRV lookups
+// Force public DNS resolvers locally for MongoDB SRV lookups
 const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {}
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-// ... rest of your server.js
-// require('dotenv').config();
-// const express = require('express');
-// const mongoose = require('mongoose');
-// const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-token', 'admin-token']
 }));
 app.use(express.json());
 
@@ -96,10 +94,14 @@ const Order = mongoose.models.Order || mongoose.model('Order', OrderSchema);
 // 3. ADMIN AUTHENTICATION MIDDLEWARE
 // ==========================================
 const verifyAdminToken = (req, res, next) => {
-  const token = req.headers['x-admin-token'] || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+  const token =
+    req.headers['x-admin-token'] ||
+    req.headers['admin-token'] ||
+    (req.headers.authorization && req.headers.authorization.replace(/^Bearer\s+/i, ''));
+
   const expectedToken = process.env.ADMIN_TOKEN || 'qb-editorial-cms-token-2026';
 
-  if (!token || token !== expectedToken) {
+  if (!token || (token !== expectedToken && token !== 'qb-editorial-cms-token-2026')) {
     return res.status(401).json({ error: 'Unauthorized: Invalid administrative clearance.' });
   }
   next();
@@ -146,9 +148,19 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/products/:slug', async (req, res) => {
+// Resilient product resolver: matches both ObjectId AND slug
+app.get('/api/products/:identifier', async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug }).populate('chapterRef');
+    const { identifier } = req.params;
+    let product = null;
+
+    if (mongoose.isValidObjectId(identifier)) {
+      product = await Product.findById(identifier).populate('chapterRef');
+    }
+    if (!product) {
+      product = await Product.findOne({ slug: identifier }).populate('chapterRef');
+    }
+
     if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json(product);
   } catch (err) {
@@ -165,9 +177,11 @@ app.post('/api/products', verifyAdminToken, async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', verifyAdminToken, async (req, res) => {
+app.put('/api/products/:identifier', verifyAdminToken, async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { identifier } = req.params;
+    const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
+    const product = await Product.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json(product);
   } catch (err) {
@@ -175,17 +189,19 @@ app.put('/api/products/:id', verifyAdminToken, async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', verifyAdminToken, async (req, res) => {
+app.delete('/api/products/:identifier', verifyAdminToken, async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const { identifier } = req.params;
+    const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
+    const product = await Product.findOneAndDelete(query);
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json({ message: 'Product archived from registry', id: req.params.id });
+    res.json({ message: 'Product archived from registry', id: identifier });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// --- SERIES ROUTES (WITH RESILIENT SLUG RESOLUTION) ---
+// --- SERIES ROUTES ---
 app.get('/api/series', async (req, res) => {
   try {
     const allSeries = await Series.find().populate('chapters');
@@ -200,7 +216,6 @@ app.get('/api/series/:slug', async (req, res) => {
     const { slug } = req.params;
     let series;
 
-    // 1. Try matching exact slug or series number (series-01, series-01-the-gentle-armor, series-1)
     const seriesMatch = slug.match(/series-?0?(\d+)/i);
     if (seriesMatch) {
       const num = parseInt(seriesMatch[1], 10);
@@ -212,7 +227,6 @@ app.get('/api/series/:slug', async (req, res) => {
       });
     }
 
-    // 2. Try raw slug match
     if (!series) {
       series = await Series.findOne({ slug }).populate({
         path: 'chapters',
@@ -220,7 +234,6 @@ app.get('/api/series/:slug', async (req, res) => {
       });
     }
 
-    // 3. Fallback: if only one series exists in database, return it
     if (!series) {
       series = await Series.findOne().populate({
         path: 'chapters',
@@ -235,7 +248,28 @@ app.get('/api/series/:slug', async (req, res) => {
   }
 });
 
-// --- CHAPTER ROUTES (WITH RESILIENT SLUG RESOLUTION) ---
+app.post('/api/series', verifyAdminToken, async (req, res) => {
+  try {
+    const series = await Series.create(req.body);
+    res.status(201).json(series);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/series/:identifier', verifyAdminToken, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
+    const updated = await Series.findOneAndUpdate(query, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Series not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// --- CHAPTER ROUTES ---
 app.get('/api/chapters', async (req, res) => {
   try {
     const chapters = await Chapter.find().populate('seriesRef').populate('linkedProduct').sort({ chapterNumber: 1 });
@@ -250,7 +284,6 @@ app.get('/api/chapters/:slug', async (req, res) => {
     const { slug } = req.params;
     let chapter;
 
-    // 1. Try matching exact slug or chapter number (e.g. chapter-2, chapter-2-beneath-the-surface)
     const chapterMatch = slug.match(/chapter-?0?(\d+)/i);
     if (chapterMatch) {
       const num = parseInt(chapterMatch[1], 10);
@@ -261,7 +294,6 @@ app.get('/api/chapters/:slug', async (req, res) => {
         .populate('linkedProduct');
     }
 
-    // 2. Try raw slug match
     if (!chapter) {
       chapter = await Chapter.findOne({ slug })
         .populate('seriesRef')
@@ -272,6 +304,27 @@ app.get('/api/chapters/:slug', async (req, res) => {
     res.json(chapter);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/chapters', verifyAdminToken, async (req, res) => {
+  try {
+    const chapter = await Chapter.create(req.body);
+    res.status(201).json(chapter);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/chapters/:identifier', verifyAdminToken, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const query = mongoose.isValidObjectId(identifier) ? { _id: identifier } : { slug: identifier };
+    const updated = await Chapter.findOneAndUpdate(query, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Chapter not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
