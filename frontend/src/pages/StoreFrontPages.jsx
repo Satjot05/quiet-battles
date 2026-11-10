@@ -17,6 +17,8 @@ import { useCart } from '../context/CartContext';
 
 export const API_BASE = import.meta.env.VITE_API_URL || "https://quiet-battles-api.onrender.com/api";
 
+const ROMAN_NUMERALS = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
 // ============================================================================
 // REUSABLE SCROLL-REVEAL ANIMATION WRAPPER (IntersectionObserver)
 // ============================================================================
@@ -62,8 +64,8 @@ function EditorialMarquee() {
   const items = [
     'QUIET BATTLES™ ARCHIVE',
     'WEAR YOUR BATTLES',
-    'SERIES 01 — THE GENTLE ARMOR™',
-    '480 GSM ARCHITECTURAL SILHOUETTES',
+    'SERIES 01 — THE ARCHITECTURE OF RESILIENCE',
+    '500 GSM ARCHITECTURAL SILHOUETTES',
     'CRAFTED FOR SOLITUDE & ENDURANCE',
   ];
 
@@ -93,19 +95,25 @@ export function HomePage() {
   useEffect(() => {
     document.title = 'QUIET BATTLES™ | Wear Your Battles — Narrative Luxury Streetwear';
 
-    fetch(`${API_BASE}/series/series-01-the-gentle-armor`)
+    fetch(`${API_BASE}/series/series-01`)
       .then((res) => res.json())
       .then((data) => setSeriesData(data))
       .catch((err) => console.error('API Error:', err));
 
     fetch(`${API_BASE}/products`)
       .then((res) => res.json())
-      .then((data) => setProducts(data))
+      .then((data) => setProducts(Array.isArray(data) ? data : []))
       .catch((err) => console.error('API Error:', err));
   }, []);
 
-  const primarySeries = seriesData?.series;
-  const chapters = seriesData?.chapters || [];
+  // Support both wrapped { series, chapters } and direct Series document models
+  const primarySeries = seriesData?.series || seriesData;
+  const chapters = seriesData?.chapters || primarySeries?.chapters || [];
+
+  const seriesHeroImage =
+    primarySeries?.heroImage ||
+    chapters[0]?.coverImage ||
+    "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=80";
 
   return (
     <div className="bg-film-grain">
@@ -144,7 +152,7 @@ export function HomePage() {
           <Reveal delay={550}>
             <div className="mt-9 sm:mt-11 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 px-2">
               <Link
-                to={`/series/${primarySeries?.slug || 'series-01-the-gentle-armor'}`}
+                to={`/series/${primarySeries?.slug || 'series-01'}`}
                 className="w-full sm:w-auto justify-center group px-8 sm:px-9 py-4 bg-[#f4f4f0] text-black text-xs tracking-[0.25em] uppercase font-semibold hover:bg-[#a38f78] hover:text-white transition-all duration-500 flex items-center gap-3 shadow-[0_0_30px_rgba(244,244,240,0.15)]"
               >
                 Enter The Archive
@@ -154,7 +162,7 @@ export function HomePage() {
                 />
               </Link>
               <Link
-                to="/chapter/chapter-1-the-weight-of-silence"
+                to={`/chapter/${chapters[0]?.slug || 'chapter-1-the-weight-of-silence'}`}
                 className="w-full sm:w-auto text-center px-8 sm:px-9 py-4 border border-neutral-700 bg-black/40 backdrop-blur-xs text-neutral-200 text-xs tracking-[0.25em] uppercase hover:border-[#a38f78] hover:text-[#a38f78] transition-all duration-300"
               >
                 Read Chapter I Story
@@ -194,7 +202,7 @@ export function HomePage() {
               QUIET BATTLES™ rejects seasonal fast fashion. Instead, our archive is organized into
               <span className="text-[#a38f78] font-medium"> Series</span> and
               <span className="text-[#a38f78] font-medium"> Chapters</span>. Every garment begins as
-              a written meditation on human endurance—translated into 480 GSM organic cotton,
+              a written meditation on human endurance—translated into 500 GSM organic cotton,
               exposed reverse seamlines, and protective silhouettes.
             </p>
             <p className="text-neutral-400">
@@ -212,7 +220,7 @@ export function HomePage() {
               </div>
               <div>
                 <span className="text-lg sm:text-xl font-serif-editorial text-[#a38f78]">
-                  480 GSM
+                  500 GSM
                 </span>
                 <p className="text-[10px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-white mt-1">
                   Heavy Armor
@@ -231,21 +239,21 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 3. FEATURED COLLECTION: SERIES 01 - THE GENTLE ARMOR */}
+      {/* 3. FEATURED COLLECTION: SERIES 01 */}
       {primarySeries && (
         <section className="py-20 sm:py-28 px-5 sm:px-6 max-w-7xl mx-auto">
           <Reveal>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 sm:mb-14">
               <div>
                 <span className="text-xs tracking-[0.35em] uppercase text-[#a38f78]">
-                  {primarySeries.seriesCode} // Demonstration Collection
+                  SERIES 0{primarySeries.seriesNumber || 1} // ARCHIVE COLLECTION
                 </span>
                 <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif-editorial mt-2 text-white">
                   {primarySeries.title}
                 </h2>
               </div>
               <Link
-                to={`/series/${primarySeries.slug}`}
+                to={`/series/${primarySeries.slug || 'series-01'}`}
                 className="group mt-4 md:mt-0 text-xs tracking-[0.25em] uppercase text-[#a38f78] flex items-center gap-2"
               >
                 Explore Full Series Archive
@@ -261,38 +269,38 @@ export function HomePage() {
             <div className="group grid md:grid-cols-12 gap-8 md:gap-10 bg-[#101010] border border-neutral-800 hover:border-[#a38f78]/60 transition-all duration-700 p-5 sm:p-8 md:p-12 items-center shadow-2xl">
               <div className="md:col-span-6 overflow-hidden border border-neutral-800 relative h-[260px] sm:h-[360px] md:h-[440px]">
                 <img
-                  src={primarySeries.heroImage}
+                  src={seriesHeroImage}
                   alt={primarySeries.title}
                   loading="lazy"
                   className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
                 />
                 <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-black/85 backdrop-blur-md px-3 py-1.5 border border-neutral-700">
                   <span className="text-[9px] sm:text-[10px] tracking-[0.25em] uppercase text-[#a38f78]">
-                    {primarySeries.releaseSeason}
+                    EDITION {primarySeries.releaseYear || 2026}
                   </span>
                 </div>
               </div>
 
               <div className="md:col-span-6 space-y-5 sm:space-y-6">
                 <span className="inline-flex items-center gap-2 px-3 py-1 text-[10px] tracking-[0.25em] uppercase bg-neutral-900 border border-neutral-700 text-[#a38f78]">
-                  <Shield size={12} /> 5 Chapters // 5 Connected Artifacts
+                  <Shield size={12} /> {chapters.length || 5} Chapters // Connected Garments
                 </span>
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-serif-editorial text-white leading-snug">
-                  “{primarySeries.subtitle}”
+                  “The Architecture of Resilience”
                 </h3>
-                <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
-                  {primarySeries.description}
+                <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed font-light">
+                  {primarySeries.manifesto || primarySeries.description}
                 </p>
                 <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
-                    to={`/series/${primarySeries.slug}`}
+                    to={`/series/${primarySeries.slug || 'series-01'}`}
                     className="text-center px-7 sm:px-8 py-4 bg-[#f4f4f0] text-black text-xs tracking-[0.22em] uppercase font-semibold hover:bg-[#a38f78] hover:text-white transition-all duration-300"
                   >
                     Open Series 01 Vault
                   </Link>
                   {products[0] && (
                     <Link
-                      to={`/product/${products[0]._id}`}
+                      to={`/product/${products[0]._id || products[0].slug}`}
                       className="text-center px-7 sm:px-8 py-4 border border-neutral-700 text-neutral-200 text-xs tracking-[0.22em] uppercase hover:border-[#a38f78] hover:text-[#a38f78] transition-all duration-300"
                     >
                       Inspect Flagship Garment
@@ -309,7 +317,7 @@ export function HomePage() {
               <Reveal>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8">
                   <p className="text-xs tracking-[0.3em] uppercase text-neutral-400">
-                    The 5 Chapters of Series 01 // Interactive Index
+                    The {chapters.length} Chapters of Series 01 // Interactive Index
                   </p>
                   <span className="text-[11px] tracking-[0.2em] uppercase text-[#a38f78]">
                     Select a Chapter to Read
@@ -318,41 +326,45 @@ export function HomePage() {
               </Reveal>
 
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5">
-                {chapters.map((ch, idx) => (
-                  <Reveal key={ch._id} delay={idx * 100}>
-                    <Link
-                      to={`/chapter/${ch.slug}`}
-                      className="group relative h-72 sm:h-80 bg-[#111111] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 flex flex-col justify-end overflow-hidden p-5 hover:-translate-y-2 shadow-lg"
-                    >
-                      <img
-                        src={ch.heroImage}
-                        alt={ch.title}
-                        loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover opacity-35 grayscale-[60%] group-hover:grayscale-0 group-hover:opacity-65 group-hover:scale-110 transition-all duration-700"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+                {chapters.map((ch, idx) => {
+                  const roman = ROMAN_NUMERALS[ch.chapterNumber] || ROMAN_NUMERALS[idx + 1] || `${idx + 1}`;
+                  const img = ch.coverImage || ch.heroImage || (ch.linkedProduct?.images && ch.linkedProduct.images[0]);
+                  return (
+                    <Reveal key={ch._id || idx} delay={idx * 100}>
+                      <Link
+                        to={`/chapter/${ch.slug}`}
+                        className="group relative h-72 sm:h-80 bg-[#111111] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 flex flex-col justify-end overflow-hidden p-5 hover:-translate-y-2 shadow-lg"
+                      >
+                        <img
+                          src={img}
+                          alt={ch.title}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover opacity-35 grayscale-[60%] group-hover:grayscale-0 group-hover:opacity-65 group-hover:scale-110 transition-all duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
 
-                      <div className="relative z-10">
-                        <span className="text-[10px] tracking-[0.3em] uppercase text-[#a38f78] block">
-                          Chapter {ch.romanNumeral}
-                        </span>
-                        <h4 className="text-lg font-serif-editorial text-white mt-1 group-hover:text-[#a38f78] transition-colors">
-                          {ch.title}
-                        </h4>
-                        <p className="text-[11px] text-neutral-400 mt-1.5 line-clamp-2">
-                          {ch.subtitle}
-                        </p>
-                        <span className="mt-4 pt-3 border-t border-neutral-800/80 text-[10px] tracking-[0.22em] uppercase text-neutral-200 flex items-center justify-between">
-                          <span>Enter Chapter</span>
-                          <ArrowRight
-                            size={13}
-                            className="text-[#a38f78] group-hover:translate-x-1 transition-transform"
-                          />
-                        </span>
-                      </div>
-                    </Link>
-                  </Reveal>
-                ))}
+                        <div className="relative z-10">
+                          <span className="text-[10px] tracking-[0.3em] uppercase text-[#a38f78] block">
+                            Chapter {roman}
+                          </span>
+                          <h4 className="text-lg font-serif-editorial text-white mt-1 group-hover:text-[#a38f78] transition-colors">
+                            {ch.title}
+                          </h4>
+                          <p className="text-[11px] text-neutral-400 mt-1.5 line-clamp-2">
+                            {ch.subtitle || ch.narrative?.slice(0, 75)}
+                          </p>
+                          <span className="mt-4 pt-3 border-t border-neutral-800/80 text-[10px] tracking-[0.22em] uppercase text-neutral-200 flex items-center justify-between">
+                            <span>Enter Chapter</span>
+                            <ArrowRight
+                              size={13}
+                              className="text-[#a38f78] group-hover:translate-x-1 transition-transform"
+                            />
+                          </span>
+                        </div>
+                      </Link>
+                    </Reveal>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -372,12 +384,13 @@ export function SeriesArchivePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE}/series/${slug || 'series-01-the-gentle-armor'}`)
+    fetch(`${API_BASE}/series/${slug || 'series-01'}`)
       .then((res) => res.json())
       .then((resData) => {
         setData(resData);
-        if (resData?.series) {
-          document.title = `QUIET BATTLES™ | ${resData.series.seriesCode} – ${resData.series.title}`;
+        const title = resData?.series?.title || resData?.title;
+        if (title) {
+          document.title = `QUIET BATTLES™ | ${title}`;
         }
         setLoading(false);
       })
@@ -395,18 +408,24 @@ export function SeriesArchivePage() {
     );
   }
 
-  if (!data || !data.series) {
+  const series = data?.series || data;
+  const chapters = data?.chapters || series?.chapters || [];
+
+  if (!series || !series.title) {
     return <div className="pt-36 text-center text-neutral-400">Series not found.</div>;
   }
 
-  const { series, chapters } = data;
+  const seriesHeroImage =
+    series.heroImage ||
+    chapters[0]?.coverImage ||
+    "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=80";
 
   return (
     <div className="pt-20 bg-film-grain">
       {/* Series Header Banner with Background Image */}
       <section className="relative py-20 sm:py-28 px-5 sm:px-6 border-b border-neutral-800 overflow-hidden">
         <img
-          src={series.heroImage}
+          src={seriesHeroImage}
           alt={series.title}
           className="absolute inset-0 w-full h-full object-cover opacity-20 animate-ken-burns"
         />
@@ -414,16 +433,16 @@ export function SeriesArchivePage() {
 
         <Reveal className="relative z-10 max-w-4xl mx-auto text-center">
           <span className="text-xs tracking-[0.38em] uppercase text-[#a38f78]">
-            THE ARCHIVE // {series.seriesCode}
+            THE ARCHIVE // SERIES 0{series.seriesNumber || 1}
           </span>
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif-editorial text-white mt-4">
             {series.title}
           </h1>
           <p className="text-base sm:text-lg italic text-[#a38f78] mt-4 font-serif-editorial">
-            “{series.subtitle}”
+            “The Architecture of Resilience”
           </p>
           <p className="text-xs sm:text-sm text-neutral-300 max-w-2xl mx-auto mt-6 leading-relaxed font-light">
-            {series.description}
+            {series.manifesto || series.description}
           </p>
         </Reveal>
       </section>
@@ -445,50 +464,54 @@ export function SeriesArchivePage() {
         </Reveal>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-7 sm:gap-9">
-          {chapters.map((ch, idx) => (
-            <Reveal key={ch._id} delay={idx * 100}>
-              <Link
-                to={`/chapter/${ch.slug}`}
-                className="group bg-[#111111] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 flex flex-col justify-between overflow-hidden hover:-translate-y-2 shadow-xl h-full"
-              >
-                <div>
-                  <div className="relative h-64 sm:h-80 overflow-hidden bg-neutral-900">
-                    <img
-                      src={ch.heroImage}
-                      alt={ch.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover grayscale-[45%] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent" />
-                    <div className="absolute top-4 left-4 bg-black/85 backdrop-blur-md px-3.5 py-1.5 border border-neutral-700">
-                      <span className="text-[11px] tracking-[0.25em] uppercase text-[#a38f78]">
-                        Chapter {ch.romanNumeral}
-                      </span>
+          {chapters.map((ch, idx) => {
+            const roman = ROMAN_NUMERALS[ch.chapterNumber] || ROMAN_NUMERALS[idx + 1] || `${idx + 1}`;
+            const img = ch.coverImage || ch.heroImage || (ch.linkedProduct?.images && ch.linkedProduct.images[0]);
+            return (
+              <Reveal key={ch._id || idx} delay={idx * 100}>
+                <Link
+                  to={`/chapter/${ch.slug}`}
+                  className="group bg-[#111111] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 flex flex-col justify-between overflow-hidden hover:-translate-y-2 shadow-xl h-full"
+                >
+                  <div>
+                    <div className="relative h-64 sm:h-80 overflow-hidden bg-neutral-900">
+                      <img
+                        src={img}
+                        alt={ch.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover grayscale-[45%] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-90"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent" />
+                      <div className="absolute top-4 left-4 bg-black/85 backdrop-blur-md px-3.5 py-1.5 border border-neutral-700">
+                        <span className="text-[11px] tracking-[0.25em] uppercase text-[#a38f78]">
+                          Chapter {roman}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 sm:p-7">
+                      <h3 className="text-xl sm:text-2xl font-serif-editorial text-white group-hover:text-[#a38f78] transition-colors">
+                        {ch.title}
+                      </h3>
+                      <p className="text-xs text-neutral-400 mt-2 line-clamp-2 leading-relaxed">
+                        {ch.subtitle || ch.narrative}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="p-6 sm:p-7">
-                    <h3 className="text-xl sm:text-2xl font-serif-editorial text-white group-hover:text-[#a38f78] transition-colors">
-                      {ch.title}
-                    </h3>
-                    <p className="text-xs text-neutral-400 mt-2 line-clamp-2 leading-relaxed">
-                      {ch.subtitle}
-                    </p>
+                  <div className="px-6 sm:px-7 py-4 border-t border-neutral-800/80 flex items-center justify-between text-[11px] tracking-[0.2em] uppercase text-neutral-300 bg-[#0d0d0d]">
+                    <span className="truncate pr-2">
+                      Artifact: {ch.linkedProduct ? ch.linkedProduct.name : 'Heavyweight Garment'}
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      className="text-[#a38f78] shrink-0 group-hover:translate-x-1.5 transition-transform"
+                    />
                   </div>
-                </div>
-
-                <div className="px-6 sm:px-7 py-4 border-t border-neutral-800/80 flex items-center justify-between text-[11px] tracking-[0.2em] uppercase text-neutral-300 bg-[#0d0d0d]">
-                  <span className="truncate pr-2">
-                    Artifact: {ch.linkedProduct ? ch.linkedProduct.name : 'Unassigned'}
-                  </span>
-                  <ArrowRight
-                    size={14}
-                    className="text-[#a38f78] shrink-0 group-hover:translate-x-1.5 transition-transform"
-                  />
-                </div>
-              </Link>
-            </Reveal>
-          ))}
+                </Link>
+              </Reveal>
+            );
+          })}
         </div>
       </section>
     </div>
@@ -522,13 +545,17 @@ export function ChapterDetailPage() {
       .then((data) => {
         setChapter(data);
         if (data?.title) {
-          document.title = `QUIET BATTLES™ | Chapter ${data.romanNumeral}: ${data.title}`;
+          const roman = ROMAN_NUMERALS[data.chapterNumber] || data.chapterNumber;
+          document.title = `QUIET BATTLES™ | Chapter ${roman}: ${data.title}`;
         }
-        if (data?.seriesId?.slug) {
-          fetch(`${API_BASE}/series/${data.seriesId.slug}`)
-            .then((r) => r.json())
-            .then((sData) => setAllChapters(sData.chapters || []));
-        }
+        // Fetch sibling chapters for pagination
+        fetch(`${API_BASE}/series/series-01`)
+          .then((r) => r.json())
+          .then((sData) => {
+            const list = sData?.chapters || sData?.series?.chapters || [];
+            setAllChapters(list);
+          })
+          .catch(() => {});
       })
       .catch((err) => console.error(err));
   }, [slug]);
@@ -541,7 +568,15 @@ export function ChapterDetailPage() {
     );
   }
 
+  const roman = ROMAN_NUMERALS[chapter.chapterNumber] || chapter.romanNumeral || 'I';
+  const heroImage = chapter.coverImage || chapter.heroImage;
   const product = chapter.linkedProduct;
+
+  // Split narrative string into paragraphs if array is not present
+  const paragraphs =
+    chapter.storyParagraphs ||
+    (chapter.narrative ? chapter.narrative.split('\n\n') : [chapter.subtitle]);
+
   const currentIndex = allChapters.findIndex((c) => c.slug === chapter.slug);
   const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
   const nextChapter =
@@ -562,7 +597,7 @@ export function ChapterDetailPage() {
       {/* 1. Chapter Hero with Slow Ken Burns Motion */}
       <section className="relative h-[65vh] sm:h-[75vh] flex items-end overflow-hidden border-b border-neutral-800">
         <img
-          src={chapter.heroImage}
+          src={heroImage}
           alt={chapter.title}
           className="absolute inset-0 w-full h-full object-cover opacity-45 animate-ken-burns"
         />
@@ -571,13 +606,13 @@ export function ChapterDetailPage() {
         <div className="relative z-10 max-w-4xl mx-auto px-5 sm:px-6 pb-12 sm:pb-16 w-full">
           <Reveal>
             <Link
-              to={`/series/${chapter.seriesId?.slug || 'series-01-the-gentle-armor'}`}
+              to="/series/series-01"
               className="inline-flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-[#a38f78] hover:text-white transition-colors"
             >
-              <ArrowLeft size={13} /> Back to {chapter.seriesId?.title || 'Series 01'}
+              <ArrowLeft size={13} /> Back to Series 01
             </Link>
             <p className="text-xs tracking-[0.35em] uppercase text-neutral-400 mt-4 sm:mt-5">
-              CHAPTER {chapter.romanNumeral} OF V // NARRATIVE ARCHIVE
+              CHAPTER {roman} OF V // NARRATIVE ARCHIVE
             </p>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif-editorial text-white mt-2">
               {chapter.title}
@@ -589,16 +624,14 @@ export function ChapterDetailPage() {
 
       {/* 2. Editorial Pull Quote & Narrative Paragraphs */}
       <section className="py-16 sm:py-24 px-5 sm:px-6 max-w-3xl mx-auto">
-        {chapter.pullQuote && (
-          <Reveal>
-            <blockquote className="border-l-2 border-[#a38f78] pl-5 sm:pl-7 py-3 my-6 sm:my-8 text-xl sm:text-2xl md:text-3xl font-serif-editorial italic text-[#f4f4f0] leading-relaxed bg-[#111111]/60 pr-4 sm:pr-6">
-              “{chapter.pullQuote}”
-            </blockquote>
-          </Reveal>
-        )}
+        <Reveal>
+          <blockquote className="border-l-2 border-[#a38f78] pl-5 sm:pl-7 py-3 my-6 sm:my-8 text-xl sm:text-2xl md:text-3xl font-serif-editorial italic text-[#f4f4f0] leading-relaxed bg-[#111111]/60 pr-4 sm:pr-6">
+            “{chapter.subtitle || 'Silence is not the absence of sound; it is the presence of clarity.'}”
+          </blockquote>
+        </Reveal>
 
         <div className="space-y-6 sm:space-y-7 text-sm sm:text-base text-neutral-300 leading-relaxed font-light mt-10 sm:mt-12">
-          {chapter.storyParagraphs?.map((paragraph, idx) => (
+          {paragraphs.map((paragraph, idx) => (
             <Reveal key={idx} delay={idx * 100}>
               <p
                 className={
@@ -614,39 +647,14 @@ export function ChapterDetailPage() {
         </div>
       </section>
 
-      {/* 3. Visual Mood Gallery */}
-      {chapter.moodGallery && chapter.moodGallery.length > 0 && (
-        <section className="py-10 sm:py-12 px-5 sm:px-6 max-w-6xl mx-auto">
-          <Reveal>
-            <p className="text-xs tracking-[0.3em] uppercase text-[#a38f78] mb-6">
-              Visual Study // Chapter {chapter.romanNumeral} Lookbook
-            </p>
-          </Reveal>
-          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
-            {chapter.moodGallery.map((imgUrl, index) => (
-              <Reveal key={index} delay={index * 150}>
-                <div className="overflow-hidden border border-neutral-800 group h-[260px] sm:h-[340px] md:h-[420px]">
-                  <img
-                    src={imgUrl}
-                    alt={`Mood ${index + 1}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
-                  />
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 4. Connected Chapter Artifact (Links Chapter -> Product) */}
+      {/* 3. Connected Chapter Artifact */}
       {product && (
         <section className="py-16 sm:py-20 px-5 sm:px-6 max-w-5xl mx-auto">
           <Reveal>
             <div className="group bg-[#111111] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 p-6 sm:p-8 md:p-12 grid md:grid-cols-12 gap-6 sm:gap-8 items-center shadow-2xl">
               <div className="md:col-span-5 overflow-hidden border border-neutral-800 h-64 sm:h-80">
                 <img
-                  src={product.images?.[0]}
+                  src={product.images?.[0] || heroImage}
                   alt={product.name}
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
@@ -654,20 +662,20 @@ export function ChapterDetailPage() {
               </div>
               <div className="md:col-span-7 space-y-4">
                 <span className="text-[11px] tracking-[0.3em] uppercase text-[#a38f78] flex items-center gap-2">
-                  <BookOpen size={14} /> Connected Chapter {chapter.romanNumeral} Artifact
+                  <BookOpen size={14} /> Connected Chapter {roman} Artifact
                 </span>
                 <h3 className="text-2xl md:text-3xl font-serif-editorial text-white">
                   {product.name}
                 </h3>
                 <p className="text-xs tracking-[0.2em] uppercase text-neutral-400">
-                  ₹{product.price?.toLocaleString('en-IN')} &nbsp;//&nbsp; SKU: {product.sku}
+                  ${product.price} USD &nbsp;//&nbsp; {product.edition || 'ARCHIVE RUN'}
                 </p>
                 <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
                   {product.description}
                 </p>
                 <div className="pt-3 sm:pt-4">
                   <Link
-                    to={`/product/${product._id}`}
+                    to={`/product/${product._id || product.slug}`}
                     className="w-full sm:w-auto justify-center inline-flex items-center gap-3 px-8 py-4 bg-[#f4f4f0] text-black text-xs tracking-[0.25em] uppercase font-semibold hover:bg-[#a38f78] hover:text-white transition-all duration-300"
                   >
                     Inspect & Acquire Artifact <ArrowRight size={15} />
@@ -679,7 +687,7 @@ export function ChapterDetailPage() {
         </section>
       )}
 
-      {/* 5. Sequential Chapter Pagination (Previous / Next Chapter) */}
+      {/* 4. Sequential Chapter Pagination */}
       <section className="py-12 px-5 sm:px-6 max-w-5xl mx-auto border-t border-neutral-900">
         <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
           {prevChapter ? (
@@ -695,7 +703,7 @@ export function ChapterDetailPage() {
                 Previous Chapter
               </span>
               <span className="text-base sm:text-lg font-serif-editorial text-white mt-2 group-hover:text-[#a38f78] transition-colors">
-                Chapter {prevChapter.romanNumeral}: {prevChapter.title}
+                Chapter {ROMAN_NUMERALS[prevChapter.chapterNumber] || ''}: {prevChapter.title}
               </span>
             </Link>
           ) : (
@@ -715,7 +723,7 @@ export function ChapterDetailPage() {
                 />
               </span>
               <span className="text-base sm:text-lg font-serif-editorial text-white mt-2 group-hover:text-[#a38f78] transition-colors">
-                Chapter {nextChapter.romanNumeral}: {nextChapter.title}
+                Chapter {ROMAN_NUMERALS[nextChapter.chapterNumber] || ''}: {nextChapter.title}
               </span>
             </Link>
           )}
@@ -751,7 +759,7 @@ export function ProductDetailPage() {
       .catch((err) => console.error(err));
   }, [id]);
 
-  if (!product) {
+  if (!product || product.error) {
     return (
       <div className="pt-36 text-center text-xs tracking-[0.3em] uppercase text-neutral-500 animate-pulse">
         Loading Garment Specifications...
@@ -765,6 +773,8 @@ export function ProductDetailPage() {
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
+  const images = product.images?.length > 0 ? product.images : [product.coverImage || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=1000"];
+
   return (
     <div className="pt-24 sm:pt-28 pb-20 sm:pb-24 px-5 sm:px-6 max-w-7xl mx-auto bg-film-grain">
       <div className="grid md:grid-cols-12 gap-8 md:gap-12">
@@ -772,15 +782,15 @@ export function ProductDetailPage() {
         <Reveal className="md:col-span-7 space-y-4">
           <div className="bg-[#111111] border border-neutral-800 overflow-hidden h-[340px] sm:h-[450px] md:h-[540px] group">
             <img
-              src={product.images?.[activeImage]}
+              src={images[activeImage]}
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           </div>
 
-          {product.images?.length > 1 && (
+          {images.length > 1 && (
             <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-1">
-              {product.images.map((img, idx) => (
+              {images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImage(idx)}
@@ -802,21 +812,15 @@ export function ProductDetailPage() {
           <div className="space-y-5 sm:space-y-6">
             <div>
               <span className="text-xs tracking-[0.3em] uppercase text-[#a38f78]">
-                ARCHIVE ARTIFACT // {product.sku}
+                ARCHIVE ARTIFACT // {product.edition || 'ARCHIVE RUN'}
               </span>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif-editorial text-white mt-2">
                 {product.name}
               </h1>
               <p className="text-xl sm:text-2xl text-neutral-200 mt-3 font-light">
-                ₹{product.price?.toLocaleString('en-IN')}
+                ${product.price} USD
               </p>
             </div>
-
-            {product.tagline && (
-              <p className="text-xs tracking-[0.2em] uppercase text-[#a38f78] border-y border-neutral-800 py-3.5">
-                “{product.tagline}”
-              </p>
-            )}
 
             <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-light">
               {product.description}
@@ -861,26 +865,38 @@ export function ProductDetailPage() {
                   <Check size={16} /> Added to Archive Bag
                 </>
               ) : (
-                `Add to Archive Bag — ₹${product.price?.toLocaleString('en-IN')}`
+                `Add to Archive Bag — $${product.price} USD`
               )}
             </button>
 
             {/* Fabric & Construction Details */}
-            {product.fabricDetails?.length > 0 && (
-              <div className="pt-6 border-t border-neutral-800">
-                <h4 className="text-xs tracking-[0.25em] uppercase text-neutral-400 mb-3">
-                  Material & Construction Specifications
-                </h4>
-                <ul className="space-y-2.5 text-xs text-neutral-300">
-                  {product.fabricDetails.map((detail, idx) => (
-                    <li key={idx} className="flex items-center gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
-                      {detail}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="pt-6 border-t border-neutral-800">
+              <h4 className="text-xs tracking-[0.25em] uppercase text-neutral-400 mb-3">
+                Material & Construction Specifications
+              </h4>
+              <ul className="space-y-2.5 text-xs text-neutral-300">
+                <li className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
+                  Material: {product.material}
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
+                  Fit: {product.fit}
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
+                  Weight: {product.weight}
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
+                  Origin: {product.origin}
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#a38f78] shrink-0" />
+                  Treatment: {product.treatment}
+                </li>
+              </ul>
+            </div>
           </div>
         </Reveal>
       </div>
