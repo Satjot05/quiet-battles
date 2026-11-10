@@ -1,7 +1,16 @@
+// Force Node.js to use public DNS resolvers locally for MongoDB SRV lookups
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+// ... rest of your server.js
+// require('dotenv').config();
+// const express = require('express');
+// const mongoose = require('mongoose');
+// const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
