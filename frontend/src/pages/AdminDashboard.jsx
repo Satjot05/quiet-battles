@@ -19,7 +19,7 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
-import { API_BASE } from './StorefrontPages';
+import { API_BASE } from "./StoreFrontPages";
 
 export function AdminDashboard() {
   // 1. IN-MEMORY AUTH STATE (Wipes automatically on F5 refresh)
