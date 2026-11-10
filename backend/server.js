@@ -128,8 +128,8 @@ app.get('/api', (req, res) => {
 // Admin CMS Login
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
-  const adminUser = process.env.ADMIN_USER || 'admin';
-  const adminPass = process.env.ADMIN_PASS || 'quietbattles2026';
+  const adminUser = process.env.ADMIN_USER || 'gamer_jot';
+  const adminPass = process.env.ADMIN_PASS || 'thisissecured2k26';
   const adminToken = process.env.ADMIN_TOKEN || 'qb-editorial-cms-token-2026';
 
   if (username === adminUser && password === adminPass) {
