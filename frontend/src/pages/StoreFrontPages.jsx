@@ -33,67 +33,149 @@ export const API_BASE = import.meta.env.VITE_API_URL || "https://quiet-battles-a
 const ROMAN_NUMERALS = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 // ============================================================================
-// CURATED STREETWEAR IMAGERY MATCHED TO EXACT GARMENTS & STORIES
+// DISTINCT, NON-REPEATING STREETWEAR APPAREL PHOTOGRAPHY
 // ============================================================================
-const MATCHED_STREETWEAR_ASSETS = {
-  heroMain: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1800&q=85", // Heavyweight dark hoodie aesthetic
-  seriesBanner: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1600&q=85", // Dark editorial streetwear lookbook
-  chapters: {
-    1: {
-      cover: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=85", // Heavyweight Black Hoodie
-      productImg: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=85",
-      altImg: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
-      categoryTag: "500 GSM Heavyweight Hoodie",
-      fitSpec: "Boxy Drop-Shoulder Hoodie"
-    },
-    2: {
-      cover: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85", // Dark Oversized Streetwear Tee
-      productImg: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1000&q=85",
-      altImg: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=85",
-      categoryTag: "320 GSM Oversized Boxy Tee",
-      fitSpec: "Heavyweight Boxy T-Shirt"
-    },
-    3: {
-      cover: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&q=85", // Heavyweight Crewneck Sweatshirt
-      productImg: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=85",
-      altImg: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=85",
-      categoryTag: "480 GSM Structured Crewneck",
-      fitSpec: "Ribbed Collar Sweatshirt"
-    },
-    4: {
-      cover: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1200&q=85", // Tactical Cargo Pants
-      productImg: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1000&q=85",
-      altImg: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1000&q=85",
-      categoryTag: "Ripstop Tactical Cargo Pant",
-      fitSpec: "Multi-Pocket Utility Trousers"
-    },
-    5: {
-      cover: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1200&q=85", // Structured Outerwear Jacket
-      productImg: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
-      altImg: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=1000&q=85",
-      categoryTag: "Weatherproof Technical Overcoat",
-      fitSpec: "Structured Storm Jacket"
-    }
+constGARMENT_CATALOG_VISUALS = [
+  {
+    // Slot 0: Heavyweight Hoodie (Black/Charcoal Fleece)
+    keywords: ['hoodie', 'monolith', 'silence', 'stoic', 'fleece'],
+    cover: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "500 GSM Heavyweight Hoodie",
+    fitSpec: "Boxy Drop-Shoulder Hoodie"
+  },
+  {
+    // Slot 1: Oversized Boxy Streetwear T-Shirt (Actual Black/Dark Tee flatlay & fit)
+    keywords: ['obscurity', 'oversized tee', 't-shirt', 'solitude', 'jersey'],
+    cover: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "320 GSM Oversized Boxy Tee",
+    fitSpec: "Heavyweight Boxy T-Shirt"
+  },
+  {
+    // Slot 2: Kintsugi Tactical Pullover / Half-Zip / Tech Sweatshirt
+    keywords: ['kintsugi', 'pullover', 'tactical pullover', 'crew', 'monastic', 'softshell'],
+    cover: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "480 GSM Tactical Pullover",
+    fitSpec: "Structured Storm-Collar Pullover"
+  },
+  {
+    // Slot 3: Cargo Pants / Utility Trousers
+    keywords: ['cargo', 'pant', 'trouser', 'utility', 'struggle', 'anatom'],
+    cover: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "Ripstop Tactical Cargo Pant",
+    fitSpec: "Multi-Pocket Utility Trousers"
+  },
+  {
+    // Slot 4: Equilibrium Archive Overcoat / Heavy Jacket
+    keywords: ['equilibrium', 'overcoat', 'coat', 'jacket', 'parka', 'ascension', 'melton'],
+    cover: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "650 GSM Heavy Archive Overcoat",
+    fitSpec: "Structured Single-Breasted Overcoat"
+  },
+  {
+    // Slot 5: Extra Fallback (Dark Minimalist Streetwear Bomber/Shell)
+    keywords: ['bomber', 'shell', 'anorak', 'vest'],
+    cover: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "Technical Archive Shell",
+    fitSpec: "Relaxed Boxy Outerwear"
   }
-};
+];
 
-// Helper to match product or chapter to curated streetwear imagery so photos always match the text
+const HERO_BANNER_IMAGE = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=85";
+
+// Deterministically resolves a unique, accurate streetwear image for each item
 function getMatchedProductVisuals(product, index = 0) {
-  const name = (product?.name || product?.title || '').toLowerCase();
-  let slot = (index % 5) + 1;
+  const text = `${product?.name || ''} ${product?.title || ''} ${product?.slug || ''}`.toLowerCase();
 
-  if (name.includes('hoodie') || name.includes('silence') || name.includes('stoic')) slot = 1;
-  else if (name.includes('tee') || name.includes('t-shirt') || name.includes('solitude') || name.includes('shirt')) slot = 2;
-  else if (name.includes('crew') || name.includes('monastic') || name.includes('sweater') || name.includes('fleece')) slot = 3;
-  else if (name.includes('cargo') || name.includes('pant') || name.includes('trouser') || name.includes('struggle')) slot = 4;
-  else if (name.includes('jacket') || name.includes('coat') || name.includes('parka') || name.includes('ascension') || name.includes('shell')) slot = 5;
+  // Check exact multi-character keywords in priority order
+  if (text.includes('overcoat') || text.includes('equilibrium') || text.includes('coat') || text.includes('jacket')) {
+    return theGarmentSlot(4);
+  }
+  if (text.includes('kintsugi') || text.includes('pullover') || text.includes('crew') || text.includes('monastic')) {
+    return theGarmentSlot(2);
+  }
+  if (text.includes('obscurity') || text.includes('oversized tee') || text.includes('t-shirt') || /\btee\b/.test(text)) {
+    return theGarmentSlot(1);
+  }
+  if (text.includes('cargo') || text.includes('pant') || text.includes('trouser') || text.includes('utility')) {
+    return theGarmentSlot(3);
+  }
+  if (text.includes('hoodie') || text.includes('monolith') || text.includes('silence') || text.includes('stoic')) {
+    return theGarmentSlot(0);
+  }
 
-  const matched = MATCHED_STREETWEAR_ASSETS.chapters[slot];
+  // Fallback by array index so two adjacent cards NEVER share the same image
+  return theGarmentSlot(index % theGarmentList().length);
+}
+
+function theGarmentList() {
+  return theGarmentCatalog;
+}
+
+const theGarmentCatalog = [
+  {
+    cover: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "500 GSM Heavyweight Hoodie",
+    fitSpec: "Boxy Drop-Shoulder Hoodie"
+  },
+  {
+    cover: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "320 GSM Oversized Boxy Tee",
+    fitSpec: "Heavyweight Boxy T-Shirt"
+  },
+  {
+    cover: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "480 GSM Tactical Pullover",
+    fitSpec: "Structured Storm-Collar Pullover"
+  },
+  {
+    cover: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "Ripstop Tactical Cargo Pant",
+    fitSpec: "Multi-Pocket Utility Trousers"
+  },
+  {
+    cover: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "650 GSM Heavy Archive Overcoat",
+    fitSpec: "Structured Single-Breasted Overcoat"
+  },
+  {
+    cover: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
+    productImg: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1000&q=85",
+    altImg: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=1000&q=85",
+    categoryTag: "Technical Archive Jacket",
+    fitSpec: "Relaxed Boxy Outerwear"
+  }
+];
+
+function theGarmentSlot(slotIndex) {
+  const item = theGarmentCatalog[slotIndex] || theGarmentCatalog[0];
   return {
-    primaryImage: matched.productImg,
-    secondaryImage: matched.altImg,
-    categoryTag: matched.categoryTag,
-    fitSpec: matched.fitSpec
+    primaryImage: item.productImg,
+    secondaryImage: item.altImg,
+    cover: item.cover,
+    categoryTag: item.categoryTag,
+    fitSpec: item.fitSpec
   };
 }
 
@@ -880,8 +962,8 @@ export function HomePage() {
       {/* 1. CUSTOMER-CLEAR HERO SECTION */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden border-b border-neutral-800">
         <img
-          src={MATCHED_STREETWEAR_ASSETS.heroMain}
-          alt="Quiet Battles Heavyweight Streetwear Hoodie"
+          src={HERO_BANNER_IMAGE}
+          alt="Quiet Battles Heavyweight Streetwear"
           className="absolute inset-0 w-full h-full object-cover opacity-45 animate-ken-burns"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/65 to-black/75" />
@@ -911,7 +993,6 @@ export function HomePage() {
             </p>
           </Reveal>
 
-          {/* Clear Customer Trust Badges */}
           <Reveal delay={450}>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm text-neutral-300">
               <span className="flex items-center gap-2"><Award size={16} className="text-[#a38f78]" /> 500 GSM Organic Cotton</span>
@@ -942,7 +1023,7 @@ export function HomePage() {
 
       <EditorialMarquee />
 
-      {/* 2. DIRECT SHOPPING GRID — CUSTOMERS CAN IMMEDIATELY SEE & BUY GARMENTS */}
+      {/* 2. DIRECT SHOPPING GRID — EVERY PRODUCT HAS A UNIQUE APPAREL IMAGE */}
       <section id="direct-shop-grid" className="py-20 sm:py-24 px-5 sm:px-6 max-w-7xl mx-auto border-b border-neutral-900">
         <Reveal>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
@@ -976,7 +1057,6 @@ export function HomePage() {
               <Reveal key={product._id || idx} delay={idx * 100}>
                 <div className="group bg-[#121212] border border-neutral-800 hover:border-[#a38f78] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl">
                   <div>
-                    {/* Product Image with Category Badge */}
                     <Link to={`/product/${product._id || product.slug}`} className="block relative h-80 sm:h-96 overflow-hidden bg-[#181818]">
                       <img
                         src={visuals.primaryImage}
@@ -991,7 +1071,6 @@ export function HomePage() {
                       </div>
                     </Link>
 
-                    {/* Readable Product Info */}
                     <div className="p-6">
                       <div className="flex justify-between items-start gap-2">
                         <Link to={`/product/${product._id || product.slug}`}>
@@ -1009,7 +1088,6 @@ export function HomePage() {
                     </div>
                   </div>
 
-                  {/* Quick Size Selector & 1-Click Add to Bag */}
                   <div className="px-6 pb-6 pt-3 border-t border-neutral-800/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium uppercase tracking-wider text-neutral-400">Quick Size:</span>
@@ -1059,7 +1137,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 3. HOW QUIET BATTLES WORKS (CLEAR 3-PILLAR EXPLANATION FOR NEW VISITORS) */}
+      {/* 3. HOW QUIET BATTLES WORKS */}
       <section className="py-20 px-5 sm:px-6 max-w-6xl mx-auto border-b border-neutral-900">
         <Reveal>
           <div className="text-center max-w-3xl mx-auto mb-14">
@@ -1102,7 +1180,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 4. RESTORED EDITORIAL CHAPTERS SHOWCASE (CHAPTERS I–V WITH MATCHED PHOTOS) */}
+      {/* 4. EDITORIAL CHAPTERS SHOWCASE */}
       {primarySeries && (
         <section className="py-20 sm:py-24 px-5 sm:px-6 max-w-7xl mx-auto">
           <Reveal>
@@ -1127,8 +1205,7 @@ export function HomePage() {
           {chapters.length > 0 && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {chapters.map((ch, idx) => {
-                const slot = (idx % 5) + 1;
-                const matched = MATCHED_STREETWEAR_ASSETS.chapters[slot];
+                const matched = theGarmentSlot(idx % 5);
                 const roman = ROMAN_NUMERALS[ch.chapterNumber] || ROMAN_NUMERALS[idx + 1] || `${idx + 1}`;
 
                 return (
@@ -1171,7 +1248,7 @@ export function HomePage() {
 }
 
 // ============================================================================
-// 4. SERIES ARCHIVE PAGE (LOOKBOOK + STORY + GARMENTS)
+// 4. SERIES ARCHIVE PAGE
 // ============================================================================
 export function SeriesArchivePage() {
   const { slug } = useParams();
@@ -1212,8 +1289,7 @@ export function SeriesArchivePage() {
       <section className="py-16 px-5 sm:px-6 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {chapters.map((ch, idx) => {
-            const slot = (idx % 5) + 1;
-            const matched = MATCHED_STREETWEAR_ASSETS.chapters[slot];
+            const matched = theGarmentSlot(idx % 5);
             const roman = ROMAN_NUMERALS[ch.chapterNumber] || `${idx + 1}`;
             const linkedProd = ch.linkedProduct;
 
@@ -1263,7 +1339,7 @@ export function SeriesArchivePage() {
 }
 
 // ============================================================================
-// 5. CHAPTER DETAIL PAGE (HIGH-CONTRAST READABLE STORY + CONNECTED GARMENT)
+// 5. CHAPTER DETAIL PAGE
 // ============================================================================
 export function ChapterDetailPage() {
   const { slug } = useParams();
@@ -1279,15 +1355,14 @@ export function ChapterDetailPage() {
 
   if (!chapter) return <div className="pt-36 text-center text-sm tracking-widest uppercase text-neutral-400">Loading Chapter Story...</div>;
 
-  const slot = ((chapter.chapterNumber || 1) - 1) % 5 + 1;
-  const matched = MATCHED_STREETWEAR_ASSETS.chapters[slot];
+  const slotIdx = ((chapter.chapterNumber || 1) - 1) % 5;
+  const matched = theGarmentSlot(slotIdx);
   const roman = ROMAN_NUMERALS[chapter.chapterNumber] || 'I';
   const product = chapter.linkedProduct;
   const paragraphs = chapter.narrative ? chapter.narrative.split('\n\n') : [chapter.subtitle];
 
   return (
     <div className="pt-20 bg-[#0a0a0a]">
-      {/* Story Hero */}
       <section className="relative h-[60vh] flex items-end overflow-hidden border-b border-neutral-800">
         <img src={matched.cover} alt={chapter.title} className="absolute inset-0 w-full h-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
@@ -1303,7 +1378,6 @@ export function ChapterDetailPage() {
         </div>
       </section>
 
-      {/* High-Readability Narrative Body */}
       <section className="py-16 px-6 max-w-3xl mx-auto space-y-6 text-base sm:text-lg text-[#e5e5e0] leading-[1.85]">
         {paragraphs.map((p, idx) => (
           <p key={idx} className={idx === 0 ? "first-letter:text-4xl first-letter:font-serif-editorial first-letter:text-[#a38f78] first-letter:mr-2 first-letter:float-left" : ""}>
@@ -1312,12 +1386,11 @@ export function ChapterDetailPage() {
         ))}
       </section>
 
-      {/* Connected Garment Showcase Card */}
       {product && (
         <section className="py-12 px-6 max-w-5xl mx-auto pb-24">
           <div className="bg-[#121212] border-2 border-[#a38f78]/50 p-6 sm:p-10 grid md:grid-cols-12 gap-8 items-center shadow-2xl">
             <div className="md:col-span-5 h-80 overflow-hidden border border-neutral-800 relative">
-              <img src={matched.productImg} alt={product.name} className="w-full h-full object-cover" />
+              <img src={matched.primaryImage} alt={product.name} className="w-full h-full object-cover" />
               <span className="absolute top-3 left-3 bg-black/85 px-3 py-1 text-xs font-bold text-[#a38f78] uppercase">
                 {matched.categoryTag}
               </span>
@@ -1346,7 +1419,7 @@ export function ChapterDetailPage() {
 }
 
 // ============================================================================
-// 6. PRODUCT DETAIL PAGE (MATCHED GALLERY + READABLE SPECS + SIZE MATRIX)
+// 6. PRODUCT DETAIL PAGE
 // ============================================================================
 export function ProductDetailPage() {
   const { id } = useParams();
@@ -1384,7 +1457,6 @@ export function ProductDetailPage() {
       </div>
 
       <div className="grid md:grid-cols-12 gap-10 lg:gap-12">
-        {/* Left Column: Matched Streetwear Gallery */}
         <div className="md:col-span-7 space-y-4">
           <div className="bg-[#121212] border border-neutral-800 h-[460px] sm:h-[560px] overflow-hidden relative">
             <img src={images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
@@ -1407,7 +1479,6 @@ export function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Right Column: Clear E-Commerce Purchase Controls */}
         <div className="md:col-span-5 space-y-6">
           <div>
             <span className="text-xs font-mono uppercase tracking-widest text-[#a38f78]">
@@ -1422,7 +1493,6 @@ export function ProductDetailPage() {
             {product.description}
           </p>
 
-          {/* Size Selection */}
           <div className="pt-4 border-t border-neutral-800">
             <div className="flex justify-between text-xs font-semibold tracking-wider uppercase mb-3">
               <span className="text-neutral-200">Select Garment Size (US/EU)</span>
@@ -1447,7 +1517,6 @@ export function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Add to Bag Button */}
           <button
             onClick={() => {
               addToCart({ ...product, images: [visuals.primaryImage] }, selectedSize);
@@ -1459,7 +1528,6 @@ export function ProductDetailPage() {
             {added ? <><Check size={18} /> Added to Shopping Bag</> : <><ShoppingBag size={18} /> Add to Bag — ${product.price} USD</>}
           </button>
 
-          {/* Readable Garment Specifications Box */}
           <div className="p-5 bg-[#121212] border border-neutral-800 space-y-3 text-sm text-neutral-300">
             <h4 className="text-xs font-bold uppercase tracking-widest text-[#a38f78]">Garment Specifications</h4>
             <p><span className="text-white font-semibold">Category:</span> {visuals.fitSpec}</p>
@@ -1471,7 +1539,6 @@ export function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Full Measurement Matrix Modal */}
       {sizeGuideOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs">
           <div className="bg-[#121212] border border-neutral-700 max-w-lg w-full p-6 sm:p-8 relative shadow-2xl">
