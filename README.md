@@ -20,7 +20,7 @@ QUIET BATTLES™ merges luxury heavyweight streetwear with chapter-based editori
 ## 🛠 Tech Stack
 
 ### Frontend
-- **Framework**: [React 19](https://react.dev/) + [Vite](https://vite.dev/)
+- **Framework**: [React 18](https://react.dev/) + [Vite](https://vite.dev/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Routing**: [React Router v7](https://reactrouter.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
