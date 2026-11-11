@@ -35,10 +35,11 @@ const ROMAN_NUMERALS = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', '
 // ============================================================================
 // DISTINCT, NON-REPEATING STREETWEAR APPAREL PHOTOGRAPHY
 // ============================================================================
-constGARMENT_CATALOG_VISUALS = [
+const HERO_BANNER_IMAGE = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=85";
+
+const theGarmentCatalog = [
   {
     // Slot 0: Heavyweight Hoodie (Black/Charcoal Fleece)
-    keywords: ['hoodie', 'monolith', 'silence', 'stoic', 'fleece'],
     cover: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
@@ -46,8 +47,7 @@ constGARMENT_CATALOG_VISUALS = [
     fitSpec: "Boxy Drop-Shoulder Hoodie"
   },
   {
-    // Slot 1: Oversized Boxy Streetwear T-Shirt (Actual Black/Dark Tee flatlay & fit)
-    keywords: ['obscurity', 'oversized tee', 't-shirt', 'solitude', 'jersey'],
+    // Slot 1: Oversized Boxy Streetwear T-Shirt
     cover: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=85",
@@ -55,8 +55,7 @@ constGARMENT_CATALOG_VISUALS = [
     fitSpec: "Heavyweight Boxy T-Shirt"
   },
   {
-    // Slot 2: Kintsugi Tactical Pullover / Half-Zip / Tech Sweatshirt
-    keywords: ['kintsugi', 'pullover', 'tactical pullover', 'crew', 'monastic', 'softshell'],
+    // Slot 2: Kintsugi Tactical Pullover / Sweatshirt
     cover: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1000&q=85",
@@ -65,7 +64,6 @@ constGARMENT_CATALOG_VISUALS = [
   },
   {
     // Slot 3: Cargo Pants / Utility Trousers
-    keywords: ['cargo', 'pant', 'trouser', 'utility', 'struggle', 'anatom'],
     cover: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1000&q=85",
@@ -74,7 +72,6 @@ constGARMENT_CATALOG_VISUALS = [
   },
   {
     // Slot 4: Equilibrium Archive Overcoat / Heavy Jacket
-    keywords: ['equilibrium', 'overcoat', 'coat', 'jacket', 'parka', 'ascension', 'melton'],
     cover: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1000&q=85",
@@ -82,84 +79,7 @@ constGARMENT_CATALOG_VISUALS = [
     fitSpec: "Structured Single-Breasted Overcoat"
   },
   {
-    // Slot 5: Extra Fallback (Dark Minimalist Streetwear Bomber/Shell)
-    keywords: ['bomber', 'shell', 'anorak', 'vest'],
-    cover: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "Technical Archive Shell",
-    fitSpec: "Relaxed Boxy Outerwear"
-  }
-];
-
-const HERO_BANNER_IMAGE = "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=85";
-
-// Deterministically resolves a unique, accurate streetwear image for each item
-function getMatchedProductVisuals(product, index = 0) {
-  const text = `${product?.name || ''} ${product?.title || ''} ${product?.slug || ''}`.toLowerCase();
-
-  // Check exact multi-character keywords in priority order
-  if (text.includes('overcoat') || text.includes('equilibrium') || text.includes('coat') || text.includes('jacket')) {
-    return theGarmentSlot(4);
-  }
-  if (text.includes('kintsugi') || text.includes('pullover') || text.includes('crew') || text.includes('monastic')) {
-    return theGarmentSlot(2);
-  }
-  if (text.includes('obscurity') || text.includes('oversized tee') || text.includes('t-shirt') || /\btee\b/.test(text)) {
-    return theGarmentSlot(1);
-  }
-  if (text.includes('cargo') || text.includes('pant') || text.includes('trouser') || text.includes('utility')) {
-    return theGarmentSlot(3);
-  }
-  if (text.includes('hoodie') || text.includes('monolith') || text.includes('silence') || text.includes('stoic')) {
-    return theGarmentSlot(0);
-  }
-
-  // Fallback by array index so two adjacent cards NEVER share the same image
-  return theGarmentSlot(index % theGarmentList().length);
-}
-
-function theGarmentList() {
-  return theGarmentCatalog;
-}
-
-const theGarmentCatalog = [
-  {
-    cover: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "500 GSM Heavyweight Hoodie",
-    fitSpec: "Boxy Drop-Shoulder Hoodie"
-  },
-  {
-    cover: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "320 GSM Oversized Boxy Tee",
-    fitSpec: "Heavyweight Boxy T-Shirt"
-  },
-  {
-    cover: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "480 GSM Tactical Pullover",
-    fitSpec: "Structured Storm-Collar Pullover"
-  },
-  {
-    cover: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "Ripstop Tactical Cargo Pant",
-    fitSpec: "Multi-Pocket Utility Trousers"
-  },
-  {
-    cover: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1200&q=85",
-    productImg: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
-    altImg: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1000&q=85",
-    categoryTag: "650 GSM Heavy Archive Overcoat",
-    fitSpec: "Structured Single-Breasted Overcoat"
-  },
-  {
+    // Slot 5: Technical Archive Jacket
     cover: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
     productImg: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1000&q=85",
     altImg: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=1000&q=85",
@@ -177,6 +97,28 @@ function theGarmentSlot(slotIndex) {
     categoryTag: item.categoryTag,
     fitSpec: item.fitSpec
   };
+}
+
+function getMatchedProductVisuals(product, index = 0) {
+  const text = `${product?.name || ''} ${product?.title || ''} ${product?.slug || ''}`.toLowerCase();
+
+  if (text.includes('overcoat') || text.includes('equilibrium') || text.includes('coat') || text.includes('jacket')) {
+    return theGarmentSlot(4);
+  }
+  if (text.includes('kintsugi') || text.includes('pullover') || text.includes('crew') || text.includes('monastic')) {
+    return theGarmentSlot(2);
+  }
+  if (text.includes('obscurity') || text.includes('oversized tee') || text.includes('t-shirt') || /\btee\b/.test(text)) {
+    return theGarmentSlot(1);
+  }
+  if (text.includes('cargo') || text.includes('pant') || text.includes('trouser') || text.includes('utility')) {
+    return theGarmentSlot(3);
+  }
+  if (text.includes('hoodie') || text.includes('monolith') || text.includes('silence') || text.includes('stoic')) {
+    return theGarmentSlot(0);
+  }
+
+  return theGarmentSlot(index % theGarmentCatalog.length);
 }
 
 // ============================================================================
@@ -451,7 +393,7 @@ export function ArchiveBagDrawer() {
 export function CmsAdminModal({ isOpen, onClose }) {
   const [token, setToken] = useState(localStorage.getItem('qb_admin_token') || '');
   const [loggedIn, setLoggedIn] = useState(Boolean(localStorage.getItem('qb_admin_token')));
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
@@ -959,7 +901,6 @@ export function HomePage() {
 
   return (
     <div className="bg-[#0a0a0a]">
-      {/* 1. CUSTOMER-CLEAR HERO SECTION */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden border-b border-neutral-800">
         <img
           src={HERO_BANNER_IMAGE}
@@ -1023,7 +964,7 @@ export function HomePage() {
 
       <EditorialMarquee />
 
-      {/* 2. DIRECT SHOPPING GRID — EVERY PRODUCT HAS A UNIQUE APPAREL IMAGE */}
+      {/* 2. DIRECT SHOPPING GRID */}
       <section id="direct-shop-grid" className="py-20 sm:py-24 px-5 sm:px-6 max-w-7xl mx-auto border-b border-neutral-900">
         <Reveal>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
