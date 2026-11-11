@@ -529,6 +529,7 @@ export function CmsAdminModal({ isOpen, onClose }) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-[#181818] border border-neutral-700 px-4 py-3 text-sm text-white focus:border-[#a38f78] outline-none"
+                    placeholder="Enter username"
                     required
                   />
                 </div>
@@ -541,7 +542,7 @@ export function CmsAdminModal({ isOpen, onClose }) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full bg-[#181818] border border-neutral-700 px-4 py-3 text-sm text-white focus:border-[#a38f78] outline-none pr-10"
-                      placeholder="Enter password (quietbattles2026)"
+                      placeholder="Enter password"
                       required
                     />
                     <button
