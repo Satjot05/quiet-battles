@@ -468,9 +468,15 @@ app.get('/api/orders', verifyAdminToken, async (req, res) => {
 // ============================================================================
 // 7. MONGOOSE CONNECTION & SERVER STARTUP
 // ============================================================================
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  'mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority';
+// ============================================================================
+// 7. MONGOOSE CONNECTION & SERVER STARTUP
+// ============================================================================
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI environment variable is not defined.');
+  process.exit(1);
+}
 
 mongoose.connect(MONGO_URI)
   .then(() => {
