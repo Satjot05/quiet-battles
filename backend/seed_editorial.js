@@ -3,8 +3,12 @@ dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://gamer_jot:thisissecured2k26@sainijot.eefej8j.mongodb.net/quiet_battles?retryWrites=true&w=majority";
+const MONGO_URI = process.env.MONGO_URI;
 
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI environment variable is missing in .env");
+  process.exit(1);
+}
 // Schemas matching server.js
 const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
